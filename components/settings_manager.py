@@ -32,7 +32,8 @@ class SettingsManager:
         if self.settings_file.exists():
             try:
                 with open(self.settings_file, 'r', encoding='utf-8') as f:
-                    return json.load(f)
+                    loaded_settings = json.load(f)
+                    return self._merge_settings(self._get_default_settings(), loaded_settings)
             except (json.JSONDecodeError, IOError) as e:
                 print(f"加载设置文件失败: {e}")
                 return self._get_default_settings()
@@ -90,6 +91,16 @@ class SettingsManager:
             "check_updates": True,
             "version": "1.0.0"
         }
+
+    def _merge_settings(self, base: Dict[str, Any], overrides: Dict[str, Any]) -> Dict[str, Any]:
+        """合并设置（保留默认值，覆盖自定义项）"""
+        merged = dict(base)
+        for key, value in overrides.items():
+            if isinstance(value, dict) and isinstance(merged.get(key), dict):
+                merged[key] = self._merge_settings(merged[key], value)
+            else:
+                merged[key] = value
+        return merged
 
     def get(self, key: str, default: Any = None) -> Any:
         """获取设置值
