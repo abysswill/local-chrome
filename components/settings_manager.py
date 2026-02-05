@@ -64,6 +64,7 @@ class SettingsManager:
                 "ai": "https://example.com/ai",
                 "help": "https://example.com/help"
             },
+            "startup_page_url": "",
             "default_browser": "system",
             "auto_start": False,
             "data_sync": False,
