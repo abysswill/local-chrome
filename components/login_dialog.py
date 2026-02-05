@@ -19,12 +19,33 @@ from urllib.parse import urlparse, parse_qs
 import webbrowser
 
 
+class ExternalLinkPage(QWebEnginePage):
+    """用于处理新窗口/新标签的页面，将链接交给系统浏览器"""
+
+    def __init__(self, parent_dialog):
+        super().__init__()
+        self.parent_dialog = parent_dialog
+
+    def acceptNavigationRequest(self, url, navigation_type, is_main_frame):
+        url_str = url.toString()
+        if url_str:
+            if self.parent_dialog:
+                self.parent_dialog.open_external_url(url_str)
+            else:
+                webbrowser.open(url_str)
+        return False
+
+
 class LoginPage(QWebEnginePage):
     """自定义WebEngine页面，用于拦截登录请求"""
     
     def __init__(self, parent_dialog):
         super().__init__()
         self.parent_dialog = parent_dialog
+
+    def createWindow(self, window_type):
+        """处理页面内新窗口/新标签打开请求"""
+        return ExternalLinkPage(self.parent_dialog)
     
     def acceptNavigationRequest(self, url, navigation_type, is_main_frame):
         """拦截导航请求"""
@@ -125,9 +146,26 @@ class LoginDialog(QDialog):
         self.login_page = LoginPage(self)
         self.webview.setPage(self.login_page)
 
-        # 设置HTML页面路径
+        # 设置启动页面路径（可配置）
+        startup_page_url = self.settings_manager.get('startup_page_url', '').strip()
         html_path = Path(__file__).parent.parent / "01-登录.html"
-        if html_path.exists():
+
+        if startup_page_url:
+            if startup_page_url.startswith(("http://", "https://")):
+                self.webview.load(QUrl(startup_page_url))
+            else:
+                startup_path = Path(startup_page_url)
+                if not startup_path.is_absolute():
+                    startup_path = Path(__file__).parent.parent / startup_page_url
+                if startup_path.exists():
+                    self.webview.load(QUrl.fromLocalFile(str(startup_path.resolve())))
+                elif html_path.exists():
+                    self.webview.load(QUrl.fromLocalFile(str(html_path.resolve())))
+                else:
+                    # 如果HTML文件不存在，使用原生Qt界面
+                    self.create_native_login_ui(main_layout)
+                    return
+        elif html_path.exists():
             self.webview.load(QUrl.fromLocalFile(str(html_path.resolve())))
         else:
             # 如果HTML文件不存在，使用原生Qt界面
