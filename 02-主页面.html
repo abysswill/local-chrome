@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>主页面 - 桌面管理程序</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg-color: #F8FAFC;
+      --card-bg: #FFFFFF;
+      --text-primary: #1E293B;
+      --text-secondary: #64748B;
+      --border-color: #E2E8F0;
+      --primary-color: #2563EB;
+      --success-color: #16A34A;
+      --warning-color: #F97316;
+      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+      --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+      --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+      --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg-color);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      color: var(--text-primary);
+    }
+
+    /* 顶部导航栏 */
+    .navbar {
+      background: var(--card-bg);
+      border-bottom: 1px solid var(--border-color);
+      padding: 0 24px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: var(--shadow-sm);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .navbar-left {
+      display: flex;
+      align-items: center;
+    }
+
+    .logo {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, var(--primary-color), #60A5FA);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      color: white;
+      font-weight: bold;
+    }
+
+    .navbar-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .theme-toggle {
+      width: 44px;
+      height: 24px;
+      background: var(--border-color);
+      border-radius: 12px;
+      position: relative;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    .theme-toggle::before {
+      content: '🌙';
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: white;
+      top: 2px;
+      left: 2px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      transition: transform 0.3s;
+    }
+
+    .theme-toggle.active {
+      background: var(--primary-color);
+    }
+
+    .theme-toggle.active::before {
+      content: '☀️';
+      transform: translateX(20px);
+    }
+
+    .user-menu {
+      position: relative;
+    }
+
+    .user-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 500;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+
+    .user-avatar:hover {
+      transform: scale(1.05);
+    }
+
+    .user-dropdown {
+      position: absolute;
+      top: 100%;
+      right: 0;
+      background: var(--card-bg);
+      border-radius: 8px;
+      box-shadow: var(--shadow-xl);
+      border: 1px solid var(--border-color);
+      margin-top: 8px;
+      min-width: 160px;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(-8px);
+      transition: all 0.2s;
+    }
+
+    .user-dropdown.show {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+
+    .dropdown-item {
+      padding: 12px 16px;
+      font-size: 14px;
+      color: var(--text-primary);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: background 0.2s;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .dropdown-item:first-child {
+      border-radius: 8px 8px 0 0;
+    }
+
+    .dropdown-item:last-child {
+      border-radius: 0 0 8px 8px;
+      border-bottom: none;
+    }
+
+    .dropdown-item:hover {
+      background: var(--bg-color);
+    }
+
+    /* 主内容区域 */
+    .main-content {
+      flex: 1;
+      padding: 24px;
+      max-width: 1400px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .page-header {
+      margin-bottom: 32px;
+    }
+
+    .page-title {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 8px;
+    }
+
+    .page-subtitle {
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+
+    /* 功能网格 */
+    .function-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 24px;
+      margin-bottom: 32px;
+    }
+
+    .function-card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 24px;
+      border: 1px solid var(--border-color);
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .function-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--primary-color), #60A5FA);
+      transform: scaleX(0);
+      transition: transform 0.3s;
+    }
+
+    .function-card:hover {
+      transform: translateY(-8px);
+      box-shadow: var(--shadow-xl);
+      border-color: var(--primary-color);
+    }
+
+    .function-card:hover::before {
+      transform: scaleX(1);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .card-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+    }
+
+    .card-icon.users {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+    }
+
+    .card-icon.analytics {
+      background: linear-gradient(135deg, #f093fb, #f5576c);
+    }
+
+    .card-icon.monitor {
+      background: linear-gradient(135deg, #4facfe, #00f2fe);
+    }
+
+    .card-icon.messages {
+      background: linear-gradient(135deg, #43e97b, #38f9d7);
+    }
+
+    .card-icon.settings {
+      background: linear-gradient(135deg, #fa709a, #fee140);
+    }
+
+    .card-icon.help {
+      background: linear-gradient(135deg, #30cfd0, #330867);
+    }
+
+    .card-status {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--success-color);
+    }
+
+    .card-status.warning {
+      background: var(--warning-color);
+    }
+
+    .card-status.error {
+      background: #DC2626;
+    }
+
+    .card-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 8px;
+    }
+
+    .card-description {
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    /* 底部状态栏 */
+    .status-bar {
+      background: var(--card-bg);
+      border-top: 1px solid var(--border-color);
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .status-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .status-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    /* 响应式设计 */
+    @media (max-width: 1024px) {
+      .function-grid {
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      }
+
+      .search-box {
+        width: 240px;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .navbar {
+        padding: 0 16px;
+      }
+
+      .search-box {
+        display: none;
+      }
+
+      .main-content {
+        padding: 16px;
+      }
+
+      .function-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+      }
+
+      .page-title {
+        font-size: 24px;
+      }
+    }
+
+    /* 暗黑主题 */
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-color: #0F172A;
+        --card-bg: #1E293B;
+        --text-primary: #F1F5F9;
+        --text-secondary: #94A3B8;
+        --border-color: #334155;
+      }
+    }
+
+    body.dark-theme {
+      --bg-color: #0F172A;
+      --card-bg: #1E293B;
+      --text-primary: #F1F5F9;
+      --text-secondary: #94A3B8;
+      --border-color: #334155;
+    }
+
+    /* 加载动画 */
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .function-card {
+      animation: fadeInUp 0.5s ease-out backwards;
+    }
+
+    .function-card:nth-child(1) { animation-delay: 0.1s; }
+    .function-card:nth-child(2) { animation-delay: 0.2s; }
+    .function-card:nth-child(3) { animation-delay: 0.3s; }
+    .function-card:nth-child(4) { animation-delay: 0.4s; }
+    .function-card:nth-child(5) { animation-delay: 0.5s; }
+    .function-card:nth-child(6) { animation-delay: 0.6s; }
+    .function-card:nth-child(7) { animation-delay: 0.7s; }
+    .function-card:nth-child(8) { animation-delay: 0.8s; }
+  </style>
+</head>
+<body>
+  <!-- 顶部导航栏 -->
+  <nav class="navbar">
+    <div class="navbar-left">
+      <div class="logo">DM</div>
+    </div>
+    <div class="navbar-right">
+      <div class="theme-toggle" id="themeToggle"></div>
+      <div class="user-menu">
+        <div class="user-avatar" id="userAvatar">A</div>
+        <div class="user-dropdown" id="userDropdown">
+          <a href="#" class="dropdown-item" onclick="logout()">🚪 退出登录</a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- 主内容区域 -->
+  <main class="main-content">
+    <div class="page-header">
+      <h1 class="page-title">功能导航</h1>
+      <p class="page-subtitle">选择您需要使用的功能模块</p>
+    </div>
+
+    <div class="function-grid" id="functionGrid">
+      <div class="function-card" data-url="https://example.com/patients" data-title="患者管理">
+        <div class="card-header">
+          <div class="card-icon users">👥</div>
+          <div class="card-status"></div>
+        </div>
+        <h3 class="card-title">患者管理</h3>
+        <p class="card-description">管理患者信息、病历记录和健康状况跟踪</p>
+      </div>
+
+      <div class="function-card" data-url="https://example.com/assessment" data-title="评估管理">
+        <div class="card-header">
+          <div class="card-icon analytics">📊</div>
+          <div class="card-status warning"></div>
+        </div>
+        <h3 class="card-title">评估管理</h3>
+        <p class="card-description">进行健康评估、风险分析和智能诊断建议</p>
+      </div>
+
+      <div class="function-card" data-url="https://example.com/diet" data-title="饮食管理">
+        <div class="card-header">
+          <div class="card-icon settings">🍎</div>
+          <div class="card-status"></div>
+        </div>
+        <h3 class="card-title">饮食管理</h3>
+        <p class="card-description">制定饮食计划、营养分析和膳食建议</p>
+      </div>
+
+      <div class="function-card" data-url="https://example.com/exercise" data-title="运动管理">
+        <div class="card-header">
+          <div class="card-icon monitor">🏃</div>
+          <div class="card-status"></div>
+        </div>
+        <h3 class="card-title">运动管理</h3>
+        <p class="card-description">设计运动方案、健身计划和康复训练指导</p>
+      </div>
+
+      <div class="function-card" data-url="03-设置.html" data-title="系统管理">
+        <div class="card-header">
+          <div class="card-icon settings">⚙️</div>
+          <div class="card-status error"></div>
+        </div>
+        <h3 class="card-title">系统管理</h3>
+        <p class="card-description">配置系统参数、用户权限和数据安全管理</p>
+      </div>
+
+      <div class="function-card" data-url="https://example.com/work" data-title="工作管理">
+        <div class="card-header">
+          <div class="card-icon messages">💼</div>
+          <div class="card-status"></div>
+        </div>
+        <h3 class="card-title">工作管理</h3>
+        <p class="card-description">管理工作任务、日程安排和团队协作</p>
+      </div>
+
+      <div class="function-card" data-url="https://example.com/ai" data-title="人工智能">
+        <div class="card-header">
+          <div class="card-icon help">🤖</div>
+          <div class="card-status warning"></div>
+        </div>
+        <h3 class="card-title">人工智能</h3>
+        <p class="card-description">智能诊断助手、AI健康顾问和数据分析工具</p>
+      </div>
+
+      <div class="function-card" data-url="https://example.com/help" data-title="帮助文档">
+        <div class="card-header">
+          <div class="card-icon help">📖</div>
+          <div class="card-status"></div>
+        </div>
+        <h3 class="card-title">帮助文档</h3>
+        <p class="card-description">查看使用教程、常见问题和操作指南</p>
+      </div>
+    </div>
+  </main>
+
+  <!-- 底部状态栏 -->
+  <div class="status-bar">
+    <div class="status-left">
+      <span>状态: 系统正常运行</span>
+      <span>|</span>
+      <span>版本: v1.0.0</span>
+    </div>
+    <div class="status-right">
+      <span id="systemTime">2024-01-01 12:00:00</span>
+    </div>
+  </div>
+
+  <script>
+    // 用户菜单
+    const userAvatar = document.getElementById('userAvatar');
+    const userDropdown = document.getElementById('userDropdown');
+
+    userAvatar.addEventListener('click', function(e) {
+      e.stopPropagation();
+      userDropdown.classList.toggle('show');
+    });
+
+    document.addEventListener('click', function() {
+      userDropdown.classList.remove('show');
+    });
+
+    // 主题切换
+    const themeToggle = document.getElementById('themeToggle');
+    const body = document.body;
+
+    // 检查本地存储的主题设置
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark') {
+      body.classList.add('dark-theme');
+      themeToggle.classList.add('active');
+    } else if (savedTheme === 'system') {
+      // 跟随系统主题
+      if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        body.classList.add('dark-theme');
+        themeToggle.classList.add('active');
+      }
+    }
+
+    themeToggle.addEventListener('click', function() {
+      const isDark = body.classList.toggle('dark-theme');
+      this.classList.toggle('active');
+
+      // 保存主题设置
+      localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    });
+
+    // 功能卡片点击
+    const functionCards = document.querySelectorAll('.function-card');
+
+    functionCards.forEach(card => {
+      card.addEventListener('click', function() {
+        const url = this.dataset.url;
+        const title = this.dataset.title;
+
+        if (url.startsWith('http')) {
+          // 打开外部网页
+          window.open(url, '_blank');
+        } else {
+          // 内部页面跳转
+          window.location.href = url;
+        }
+      });
+    });
+
+    // 键盘快捷键
+    document.addEventListener('keydown', function(e) {
+      // ESC 关闭下拉菜单
+      if (e.key === 'Escape') {
+        userDropdown.classList.remove('show');
+      }
+    });
+
+    // 系统时间更新
+    function updateSystemTime() {
+      const now = new Date();
+      const timeString = now.toLocaleString('zh-CN', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+      });
+      document.getElementById('systemTime').textContent = timeString;
+    }
+
+    updateSystemTime();
+    setInterval(updateSystemTime, 1000);
+
+    // 卡片状态模拟更新
+    function updateCardStatus() {
+      const statusDots = document.querySelectorAll('.card-status');
+      statusDots.forEach(dot => {
+        const random = Math.random();
+        if (random < 0.7) {
+          dot.className = 'card-status';
+        } else if (random < 0.9) {
+          dot.className = 'card-status warning';
+        } else {
+          dot.className = 'card-status error';
+        }
+      });
+    }
+
+    // 每30秒更新一次状态
+    setInterval(updateCardStatus, 30000);
+
+    // 页面加载动画
+    window.addEventListener('load', function() {
+      functionCards.forEach((card, index) => {
+        setTimeout(() => {
+          card.style.opacity = '1';
+          card.style.transform = 'translateY(0)';
+        }, index * 100);
+      });
+    });
+
+    // 检查登录状态
+    function checkLoginStatus() {
+      const rememberedUser = localStorage.getItem('rememberedUser');
+      const isLoggedIn = sessionStorage.getItem('isLoggedIn');
+
+      // 如果用户已登录（通过sessionStorage）或记住的用户信息存在，允许访问
+      if (isLoggedIn === 'true' || rememberedUser) {
+        // 设置用户头像
+        const userName = rememberedUser || '用户';
+        userAvatar.textContent = userName.charAt(0).toUpperCase();
+
+        // 设置登录状态
+        sessionStorage.setItem('isLoggedIn', 'true');
+      } else {
+        // 只有在首次访问且没有任何登录信息时才重定向到登录页
+        // 为了演示方便，这里直接允许访问主页
+        userAvatar.textContent = '访客';
+        sessionStorage.setItem('isLoggedIn', 'true');
+      }
+    }
+
+    // 退出登录
+    function logout() {
+      if (confirm('确定要退出登录吗？')) {
+        // 清除登录状态
+        sessionStorage.removeItem('isLoggedIn');
+        sessionStorage.removeItem('currentUser');
+
+        // 跳转到登录页
+        window.location.href = '01-登录.html';
+      }
+    }
+
+    checkLoginStatus();
+  </script>
+</body>
+</html>

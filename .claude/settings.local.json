@@ -1,0 +1,62 @@
+{
+  "env": {
+    "BLOCKED_DOMAINS": "docs.anthropic.com,claude.ai,console.anthropic.com,api.anthropic.com",
+    "SEARCH_BLOCKLIST": "docs.anthropic.com,claude.ai,console.anthropic.com,api.anthropic.com"
+  },
+  "permissions": {
+    "allow": [
+      "Bash(powershell:*)",
+      "Bash(dir:*)",
+      "mcp__zai-mcp-server__analyze_image",
+      "Bash(for file in admin-03-user-management.html admin-04-role-permission.html admin-05-login-logs.html admin-06-operation-logs.html admin-07-system-settings.html admin-08-disease-management.html admin-09-form-management.html:*)",
+      "Bash(do sed:*)",
+      "Bash(done:*)"
+    ],
+    "deny": [],
+    "ask": [],
+    "defaultMode": "acceptEdits",
+    "disableBypassPermissionsMode": "disable"
+  },
+  "enableAllProjectMcpServers": true,
+  "allowedMcpServers": [
+    {
+      "serverName": "web-search-prime"
+    },
+    {
+      "serverName": "web-reader"
+    },
+    {
+      "serverName": "zai-mcp-server"
+    }
+  ],
+  "deniedMcpServers": [],
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -c \"[console]::beep(800,200); [console]::beep(1000,200); [console]::beep(500,200)\"",
+            "statusMessage": "播放任务完成声音..."
+          }
+        ]
+      }
+    ],
+    "PermissionRequest": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -c \"[console]::beep(800,200); [console]::beep(1000,200); [console]::beep(500,200)\"",
+            "statusMessage": "播放任务完成声音..."
+          }
+        ]
+      }
+    ]
+  },
+  "enabledPlugins": {
+    "web-search@anthropic-tools": true,
+    "web-reader@anthropic-tools": true
+  },
+  "skipWebFetchPreflight": true
+}

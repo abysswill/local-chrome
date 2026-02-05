@@ -1,0 +1,1050 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>设置 - 桌面管理程序</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg-color: #F8FAFC;
+      --card-bg: #FFFFFF;
+      --text-primary: #1E293B;
+      --text-secondary: #64748B;
+      --border-color: #E2E8F0;
+      --primary-color: #2563EB;
+      --primary-hover: #1D4ED8;
+      --success-color: #16A34A;
+      --warning-color: #F97316;
+      --error-color: #DC2626;
+      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+      --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+      --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg-color);
+      min-height: 100vh;
+      color: var(--text-primary);
+    }
+
+    /* 顶部导航栏 */
+    .navbar {
+      background: var(--card-bg);
+      border-bottom: 1px solid var(--border-color);
+      padding: 0 24px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .navbar-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .back-button {
+      width: 32px;
+      height: 32px;
+      border: none;
+      background: var(--bg-color);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      color: var(--text-primary);
+    }
+
+    .back-button:hover {
+      background: var(--primary-color);
+      color: white;
+    }
+
+    .page-title {
+      font-size: 20px;
+      font-weight: 600;
+    }
+
+    /* 设置容器 */
+    .settings-container {
+      display: flex;
+      height: calc(100vh - 64px);
+    }
+
+    /* 侧边栏 */
+    .sidebar {
+      width: 280px;
+      background: var(--card-bg);
+      border-right: 1px solid var(--border-color);
+      padding: 24px 0;
+      overflow-y: auto;
+    }
+
+    .sidebar-item {
+      padding: 12px 24px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: var(--text-secondary);
+      text-decoration: none;
+      border-left: 3px solid transparent;
+    }
+
+    .sidebar-item:hover {
+      background: var(--bg-color);
+      color: var(--text-primary);
+    }
+
+    .sidebar-item.active {
+      background: rgba(37, 99, 235, 0.1);
+      color: var(--primary-color);
+      border-left-color: var(--primary-color);
+    }
+
+    .sidebar-icon {
+      font-size: 18px;
+    }
+
+    /* 主内容区域 */
+    .settings-content {
+      flex: 1;
+      padding: 32px;
+      overflow-y: auto;
+    }
+
+    .settings-section {
+      display: none;
+    }
+
+    .settings-section.active {
+      display: block;
+      animation: fadeIn 0.3s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .section-header {
+      margin-bottom: 32px;
+    }
+
+    .section-title {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .section-description {
+      color: var(--text-secondary);
+      font-size: 14px;
+    }
+
+    .settings-group {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+      border: 1px solid var(--border-color);
+    }
+
+    .settings-group-title {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .setting-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 0;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .setting-item:last-child {
+      border-bottom: none;
+    }
+
+    .setting-left {
+      flex: 1;
+    }
+
+    .setting-label {
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+
+    .setting-description {
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .setting-control {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    /* 表单控件 */
+    .form-input {
+      padding: 8px 12px;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      font-size: 14px;
+      background: var(--bg-color);
+      transition: all 0.2s;
+      width: 200px;
+    }
+
+    .form-input:focus {
+      outline: none;
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    .form-input.wide {
+      width: 100%;
+    }
+
+    .form-select {
+      padding: 8px 12px;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      font-size: 14px;
+      background: var(--bg-color);
+      cursor: pointer;
+      transition: all 0.2s;
+      width: 200px;
+    }
+
+    .form-select:focus {
+      outline: none;
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    .switch {
+      position: relative;
+      width: 44px;
+      height: 24px;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: var(--border-color);
+      transition: 0.3s;
+      border-radius: 24px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background: white;
+      transition: 0.3s;
+      border-radius: 50%;
+    }
+
+    input:checked + .slider {
+      background: var(--primary-color);
+    }
+
+    input:checked + .slider:before {
+      transform: translateX(20px);
+    }
+
+    .button {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-weight: 500;
+    }
+
+    .button-primary {
+      background: var(--primary-color);
+      color: white;
+    }
+
+    .button-primary:hover {
+      background: var(--primary-hover);
+    }
+
+    .button-secondary {
+      background: var(--bg-color);
+      color: var(--text-primary);
+      border: 1px solid var(--border-color);
+    }
+
+    .button-secondary:hover {
+      background: var(--border-color);
+    }
+
+    .button-danger {
+      background: var(--error-color);
+      color: white;
+    }
+
+    .button-danger:hover {
+      background: #B91C1C;
+    }
+
+    /* 操作按钮区域 */
+    .action-buttons {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 24px;
+      border: 1px solid var(--border-color);
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+    }
+
+    .button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* Toast 通知 */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 16px 20px;
+      box-shadow: var(--shadow-lg);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: all 0.3s;
+      z-index: 1000;
+      max-width: 320px;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .toast-icon {
+      font-size: 20px;
+    }
+
+    .toast.success {
+      border-left: 4px solid var(--success-color);
+    }
+
+    .toast.error {
+      border-left: 4px solid var(--error-color);
+    }
+
+    .toast.warning {
+      border-left: 4px solid var(--warning-color);
+    }
+
+    /* 响应式设计 */
+    @media (max-width: 768px) {
+      .settings-container {
+        flex-direction: column;
+      }
+
+      .sidebar {
+        width: 100%;
+        display: flex;
+        overflow-x: auto;
+        padding: 16px 0;
+        border-right: none;
+        border-bottom: 1px solid var(--border-color);
+      }
+
+      .sidebar-item {
+        white-space: nowrap;
+        padding: 12px 16px;
+        border-left: none;
+        border-bottom: 3px solid transparent;
+      }
+
+      .sidebar-item.active {
+        border-left: none;
+        border-bottom-color: var(--primary-color);
+      }
+
+      .settings-content {
+        padding: 24px 16px;
+      }
+
+      .form-input,
+      .form-select {
+        width: 100%;
+      }
+
+      .setting-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+      }
+
+      .action-buttons {
+        flex-direction: column;
+      }
+    }
+
+    /* 暗黑主题 */
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-color: #0F172A;
+        --card-bg: #1E293B;
+        --text-primary: #F1F5F9;
+        --text-secondary: #94A3B8;
+        --border-color: #334155;
+      }
+    }
+
+    body.dark-theme {
+      --bg-color: #0F172A;
+      --card-bg: #1E293B;
+      --text-primary: #F1F5F9;
+      --text-secondary: #94A3B8;
+      --border-color: #334155;
+    }
+  </style>
+</head>
+<body>
+  <!-- 顶部导航栏 -->
+  <nav class="navbar">
+    <div class="navbar-left">
+      <button class="back-button" onclick="history.back()">←</button>
+      <h1 class="page-title">设置</h1>
+    </div>
+  </nav>
+
+  <div class="settings-container">
+    <!-- 侧边栏 -->
+    <aside class="sidebar">
+      <a href="#" class="sidebar-item active" data-section="user">
+        <span class="sidebar-icon">👤</span>
+        <span>用户设置</span>
+      </a>
+      <a href="#" class="sidebar-item" data-section="system">
+        <span class="sidebar-icon">⚙️</span>
+        <span>系统设置</span>
+      </a>
+      <a href="#" class="sidebar-item" data-section="appearance">
+        <span class="sidebar-icon">🎨</span>
+        <span>外观设置</span>
+      </a>
+    </aside>
+
+    <!-- 主内容区域 -->
+    <main class="settings-content">
+      <!-- 用户设置 -->
+      <section class="settings-section active" id="user-settings">
+        <div class="section-header">
+          <h2 class="section-title">用户设置</h2>
+          <p class="section-description">管理您的个人账户信息和登录偏好</p>
+        </div>
+
+        <div class="settings-group">
+          <h3 class="settings-group-title">个人信息</h3>
+          <div class="setting-item">
+            <div class="setting-left">
+              <div class="setting-label">用户名</div>
+              <div class="setting-description">您的登录用户名</div>
+            </div>
+            <div class="setting-control">
+              <input type="text" class="form-input" id="username" value="admin">
+            </div>
+          </div>
+          <div class="setting-item">
+            <div class="setting-left">
+              <div class="setting-label">显示名称</div>
+              <div class="setting-description">在界面中显示的名称</div>
+            </div>
+            <div class="setting-control">
+              <input type="text" class="form-input" id="displayName" value="管理员">
+            </div>
+          </div>
+          <div class="setting-item">
+            <div class="setting-left">
+              <div class="setting-label">邮箱地址</div>
+              <div class="setting-description">用于接收系统通知</div>
+            </div>
+            <div class="setting-control">
+              <input type="email" class="form-input" id="email" value="admin@example.com">
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-group">
+          <h3 class="settings-group-title">安全设置</h3>
+          <div class="setting-item">
+            <div class="setting-left">
+              <div class="setting-label">修改密码</div>
+              <div class="setting-description">定期更改密码以保护账户安全</div>
+            </div>
+            <div class="setting-control">
+              <button class="button button-secondary" onclick="changePassword()">修改密码</button>
+            </div>
+          </div>
+          <div class="setting-item">
+            <div class="setting-left">
+              <div class="setting-label">自动登录</div>
+              <div class="setting-description">跳过登录页面直接进入系统</div>
+            </div>
+            <div class="setting-control">
+              <label class="switch">
+                <input type="checkbox" id="autoLogin">
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+          <div class="setting-item">
+            <div class="setting-left">
+              <div class="setting-label">记住密码</div>
+              <div class="setting-description">在本地保存登录信息</div>
+            </div>
+            <div class="setting-control">
+              <label class="switch">
+                <input type="checkbox" id="rememberPassword" checked>
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 系统设置 -->
+      <section class="settings-section" id="system-settings">
+        <div class="section-header">
+          <h2 class="section-title">系统设置</h2>
+          <p class="section-description">配置系统功能和网页地址</p>
+        </div>
+
+        <div class="settings-group">
+          <h3 class="settings-group-title">功能网址配置</h3>
+          <div class="setting-item">
+            <div class="setting-left">
+              <div class="setting-label">用户管理网址</div>
+              <div class="setting-description">用户管理模块的访问地址</div>
+            </div>
+            <div class="setting-control">
+              <input type="url" class="form-input wide" id="userManagementUrl"
+                     placeholder="https://example.com/users" value="https://example.com/users">
+            </div>
+          </div>
+          <div class="setting-item">
+            <div class="setting-left">
+              <div class="setting-label">数据分析网址</div>
+              <div class="setting-description">数据分析模块的访问地址</div>
+            </div>
+            <div class="setting-control">
+              <input type="url" class="form-input wide" id="analyticsUrl"
+                     placeholder="https://example.com/analytics" value="https://example.com/analytics">
+            </div>
+          </div>
+          <div class="setting-item">
+            <div class="setting-left">
+              <div class="setting-label">系统监控网址</div>
+              <div class="setting-description">系统监控模块的访问地址</div>
+            </div>
+            <div class="setting-control">
+              <input type="url" class="form-input wide" id="monitorUrl"
+                     placeholder="https://example.com/monitor" value="https://example.com/monitor">
+            </div>
+          </div>
+          <div class="setting-item">
+            <div class="setting-left">
+              <div class="setting-label">消息中心网址</div>
+              <div class="setting-description">消息中心模块的访问地址</div>
+            </div>
+            <div class="setting-control">
+              <input type="url" class="form-input wide" id="messagesUrl"
+                     placeholder="https://example.com/messages" value="https://example.com/messages">
+            </div>
+          </div>
+          <div class="setting-item">
+            <div class="setting-left">
+              <div class="setting-label">帮助文档网址</div>
+              <div class="setting-description">帮助文档的访问地址</div>
+            </div>
+            <div class="setting-control">
+              <input type="url" class="form-input wide" id="helpUrl"
+                     placeholder="https://example.com/help" value="https://example.com/help">
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-group">
+          <h3 class="settings-group-title">系统行为</h3>
+          <div class="setting-item">
+            <div class="setting-left">
+              <div class="setting-label">默认浏览器</div>
+              <div class="setting-description">打开外部网页时使用的浏览器</div>
+            </div>
+            <div class="setting-control">
+              <select class="form-select" id="defaultBrowser">
+                <option value="system">系统默认</option>
+                <option value="chrome">Google Chrome</option>
+                <option value="firefox">Mozilla Firefox</option>
+                <option value="edge">Microsoft Edge</option>
+                <option value="safari">Safari</option>
+              </select>
+            </div>
+          </div>
+          <div class="setting-item">
+            <div class="setting-left">
+              <div class="setting-label">开机自启动</div>
+              <div class="setting-description">系统启动时自动运行本程序</div>
+            </div>
+            <div class="setting-control">
+              <label class="switch">
+                <input type="checkbox" id="autoStart">
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+          <div class="setting-item">
+            <div class="setting-left">
+              <div class="setting-label">数据同步</div>
+              <div class="setting-description">自动同步设置和数据到云端</div>
+            </div>
+            <div class="setting-control">
+              <label class="switch">
+                <input type="checkbox" id="dataSync">
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 外观设置 -->
+      <section class="settings-section" id="appearance-settings">
+        <div class="section-header">
+          <h2 class="section-title">外观设置</h2>
+          <p class="section-description">自定义界面主题和视觉效果</p>
+        </div>
+
+        <div class="settings-group">
+          <h3 class="settings-group-title">主题设置</h3>
+          <div class="setting-item">
+            <div class="setting-left">
+              <div class="setting-label">主题模式</div>
+              <div class="setting-description">选择您喜欢的界面主题</div>
+            </div>
+            <div class="setting-control">
+              <select class="form-select" id="themeMode">
+                <option value="light">明亮主题</option>
+                <option value="dark">暗黑主题</option>
+                <option value="system">跟随系统</option>
+              </select>
+            </div>
+          </div>
+          <div class="setting-item">
+            <div class="setting-left">
+              <div class="setting-label">主题快捷键</div>
+              <div class="setting-description">快速切换主题的快捷键</div>
+            </div>
+            <div class="setting-control">
+              <input type="text" class="form-input" id="themeShortcut" value="Ctrl+Shift+T" readonly>
+              <button class="button button-secondary" onclick="editShortcut()">编辑</button>
+            </div>
+          </div>
+          <div class="setting-item">
+            <div class="setting-left">
+              <div class="setting-label">动画效果</div>
+              <div class="setting-description">启用界面动画和过渡效果</div>
+            </div>
+            <div class="setting-control">
+              <label class="switch">
+                <input type="checkbox" id="enableAnimations" checked>
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-group">
+          <h3 class="settings-group-title">显示设置</h3>
+          <div class="setting-item">
+            <div class="setting-left">
+              <div class="setting-label">字体大小</div>
+              <div class="setting-description">调整界面文字大小</div>
+            </div>
+            <div class="setting-control">
+              <select class="form-select" id="fontSize">
+                <option value="small">小</option>
+                <option value="medium" selected>中</option>
+                <option value="large">大</option>
+                <option value="xlarge">特大</option>
+              </select>
+            </div>
+          </div>
+          <div class="setting-item">
+            <div class="setting-left">
+              <div class="setting-label">缩放比例</div>
+              <div class="setting-description">界面整体缩放比例</div>
+            </div>
+            <div class="setting-control">
+              <select class="form-select" id="zoomLevel">
+                <option value="80">80%</option>
+                <option value="90">90%</option>
+                <option value="100" selected>100%</option>
+                <option value="110">110%</option>
+                <option value="125">125%</option>
+                <option value="150">150%</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-group">
+          <h3 class="settings-group-title">数据管理</h3>
+          <div class="setting-item">
+            <div class="setting-left">
+              <div class="setting-label">导入设置</div>
+              <div class="setting-description">从文件导入配置设置</div>
+            </div>
+            <div class="setting-control">
+              <button class="button button-secondary" onclick="importSettings()">导入</button>
+            </div>
+          </div>
+          <div class="setting-item">
+            <div class="setting-left">
+              <div class="setting-label">导出设置</div>
+              <div class="setting-description">将当前设置导出到文件</div>
+            </div>
+            <div class="setting-control">
+              <button class="button button-secondary" onclick="exportSettings()">导出</button>
+            </div>
+          </div>
+          <div class="setting-item">
+            <div class="setting-left">
+              <div class="setting-label">重置设置</div>
+              <div class="setting-description">恢复所有设置为默认值</div>
+            </div>
+            <div class="setting-control">
+              <button class="button button-danger" onclick="resetSettings()">重置</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 操作按钮 -->
+      <div class="action-buttons">
+        <button class="button button-secondary" onclick="loadSettings()">重置更改</button>
+        <button class="button button-primary" id="saveButton" onclick="saveSettings()">保存设置</button>
+      </div>
+    </main>
+  </div>
+
+  <!-- Toast 通知 -->
+  <div class="toast" id="toast">
+    <span class="toast-icon" id="toastIcon"></span>
+    <span class="toast-message" id="toastMessage"></span>
+  </div>
+
+  <script>
+    // 侧边栏切换
+    const sidebarItems = document.querySelectorAll('.sidebar-item');
+    const settingsSections = document.querySelectorAll('.settings-section');
+
+    sidebarItems.forEach(item => {
+      item.addEventListener('click', function(e) {
+        e.preventDefault();
+
+        // 移除所有活动状态
+        sidebarItems.forEach(i => i.classList.remove('active'));
+        settingsSections.forEach(s => s.classList.remove('active'));
+
+        // 添加当前活动状态
+        this.classList.add('active');
+        const sectionId = this.dataset.section + '-settings';
+        document.getElementById(sectionId).classList.add('active');
+      });
+    });
+
+    // 设置相关变量
+    let hasChanges = false;
+    let originalSettings = {};
+
+    // 检测表单变化
+    const inputs = document.querySelectorAll('input, select');
+    inputs.forEach(input => {
+      input.addEventListener('change', function() {
+        hasChanges = true;
+        updateSaveButton();
+      });
+    });
+
+    // 更新保存按钮状态
+    function updateSaveButton() {
+      const saveButton = document.getElementById('saveButton');
+      saveButton.disabled = !hasChanges;
+    }
+
+    // 显示 Toast 通知
+    function showToast(message, type = 'success') {
+      const toast = document.getElementById('toast');
+      const toastIcon = document.getElementById('toastIcon');
+      const toastMessage = document.getElementById('toastMessage');
+
+      toast.className = `toast ${type}`;
+      toastMessage.textContent = message;
+
+      switch(type) {
+        case 'success':
+          toastIcon.textContent = '✅';
+          break;
+        case 'error':
+          toastIcon.textContent = '❌';
+          break;
+        case 'warning':
+          toastIcon.textContent = '⚠️';
+          break;
+      }
+
+      toast.classList.add('show');
+
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 3000);
+    }
+
+    // 保存设置
+    function saveSettings() {
+      const settings = {
+        // 用户设置
+        username: document.getElementById('username').value,
+        displayName: document.getElementById('displayName').value,
+        email: document.getElementById('email').value,
+        autoLogin: document.getElementById('autoLogin').checked,
+        rememberPassword: document.getElementById('rememberPassword').checked,
+
+        // 系统设置
+        userManagementUrl: document.getElementById('userManagementUrl').value,
+        analyticsUrl: document.getElementById('analyticsUrl').value,
+        monitorUrl: document.getElementById('monitorUrl').value,
+        messagesUrl: document.getElementById('messagesUrl').value,
+        helpUrl: document.getElementById('helpUrl').value,
+        defaultBrowser: document.getElementById('defaultBrowser').value,
+        autoStart: document.getElementById('autoStart').checked,
+        dataSync: document.getElementById('dataSync').checked,
+
+        // 外观设置
+        themeMode: document.getElementById('themeMode').value,
+        themeShortcut: document.getElementById('themeShortcut').value,
+        enableAnimations: document.getElementById('enableAnimations').checked,
+        fontSize: document.getElementById('fontSize').value,
+        zoomLevel: document.getElementById('zoomLevel').value
+      };
+
+      // 保存到本地存储
+      localStorage.setItem('appSettings', JSON.stringify(settings));
+
+      // 应用主题设置
+      applyThemeSettings(settings.themeMode);
+
+      hasChanges = false;
+      updateSaveButton();
+      showToast('设置保存成功！', 'success');
+    }
+
+    // 加载设置
+    function loadSettings() {
+      const savedSettings = localStorage.getItem('appSettings');
+
+      if (savedSettings) {
+        const settings = JSON.parse(savedSettings);
+        originalSettings = {...settings};
+
+        // 填充表单
+        document.getElementById('username').value = settings.username || 'admin';
+        document.getElementById('displayName').value = settings.displayName || '管理员';
+        document.getElementById('email').value = settings.email || 'admin@example.com';
+        document.getElementById('autoLogin').checked = settings.autoLogin || false;
+        document.getElementById('rememberPassword').checked = settings.rememberPassword !== false;
+
+        document.getElementById('userManagementUrl').value = settings.userManagementUrl || 'https://example.com/users';
+        document.getElementById('analyticsUrl').value = settings.analyticsUrl || 'https://example.com/analytics';
+        document.getElementById('monitorUrl').value = settings.monitorUrl || 'https://example.com/monitor';
+        document.getElementById('messagesUrl').value = settings.messagesUrl || 'https://example.com/messages';
+        document.getElementById('helpUrl').value = settings.helpUrl || 'https://example.com/help';
+        document.getElementById('defaultBrowser').value = settings.defaultBrowser || 'system';
+        document.getElementById('autoStart').checked = settings.autoStart || false;
+        document.getElementById('dataSync').checked = settings.dataSync || false;
+
+        document.getElementById('themeMode').value = settings.themeMode || 'light';
+        document.getElementById('themeShortcut').value = settings.themeShortcut || 'Ctrl+Shift+T';
+        document.getElementById('enableAnimations').checked = settings.enableAnimations !== false;
+        document.getElementById('fontSize').value = settings.fontSize || 'medium';
+        document.getElementById('zoomLevel').value = settings.zoomLevel || '100';
+
+        // 应用主题
+        applyThemeSettings(settings.themeMode);
+
+        showToast('设置加载完成', 'success');
+      }
+
+      hasChanges = false;
+      updateSaveButton();
+    }
+
+    // 应用主题设置
+    function applyThemeSettings(themeMode) {
+      const body = document.body;
+
+      if (themeMode === 'dark') {
+        body.classList.add('dark-theme');
+      } else if (themeMode === 'light') {
+        body.classList.remove('dark-theme');
+      } else if (themeMode === 'system') {
+        // 跟随系统主题
+        if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+          body.classList.add('dark-theme');
+        } else {
+          body.classList.remove('dark-theme');
+        }
+      }
+    }
+
+    // 重置设置
+    function resetSettings() {
+      if (confirm('确定要重置所有设置吗？此操作不可恢复。')) {
+        localStorage.removeItem('appSettings');
+        localStorage.removeItem('theme');
+
+        // 重置表单到默认值
+        document.getElementById('username').value = 'admin';
+        document.getElementById('displayName').value = '管理员';
+        document.getElementById('email').value = 'admin@example.com';
+        document.getElementById('autoLogin').checked = false;
+        document.getElementById('rememberPassword').checked = true;
+
+        document.getElementById('userManagementUrl').value = 'https://example.com/users';
+        document.getElementById('analyticsUrl').value = 'https://example.com/analytics';
+        document.getElementById('monitorUrl').value = 'https://example.com/monitor';
+        document.getElementById('messagesUrl').value = 'https://example.com/messages';
+        document.getElementById('helpUrl').value = 'https://example.com/help';
+        document.getElementById('defaultBrowser').value = 'system';
+        document.getElementById('autoStart').checked = false;
+        document.getElementById('dataSync').checked = false;
+
+        document.getElementById('themeMode').value = 'light';
+        document.getElementById('themeShortcut').value = 'Ctrl+Shift+T';
+        document.getElementById('enableAnimations').checked = true;
+        document.getElementById('fontSize').value = 'medium';
+        document.getElementById('zoomLevel').value = '100';
+
+        applyThemeSettings('light');
+        showToast('设置已重置为默认值', 'success');
+      }
+    }
+
+    // 导入设置
+    function importSettings() {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.json';
+
+      input.onchange = function(e) {
+        const file = e.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = function(event) {
+            try {
+              const settings = JSON.parse(event.target.result);
+              localStorage.setItem('appSettings', JSON.stringify(settings));
+              loadSettings();
+              showToast('设置导入成功', 'success');
+            } catch (error) {
+              showToast('设置导入失败：文件格式错误', 'error');
+            }
+          };
+          reader.readAsText(file);
+        }
+      };
+
+      input.click();
+    }
+
+    // 导出设置
+    function exportSettings() {
+      const settings = localStorage.getItem('appSettings');
+      if (settings) {
+        const blob = new Blob([settings], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `settings-${new Date().toISOString().slice(0, 10)}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        showToast('设置导出成功', 'success');
+      } else {
+        showToast('没有可导出的设置', 'warning');
+      }
+    }
+
+    // 修改密码
+    function changePassword() {
+      showToast('密码修改功能将在新窗口中打开', 'success');
+      // 这里可以打开密码修改窗口或跳转到密码修改页面
+    }
+
+    // 编辑快捷键
+    function editShortcut() {
+      showToast('快捷键编辑功能开发中', 'warning');
+    }
+
+    // 页面加载时加载设置
+    window.addEventListener('load', function() {
+      loadSettings();
+    });
+
+    // 页面关闭前提示保存
+    window.addEventListener('beforeunload', function(e) {
+      if (hasChanges) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    });
+  </script>
+</body>
+</html>
