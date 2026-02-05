@@ -45,7 +45,9 @@ class LoginPage(QWebEnginePage):
 
     def createWindow(self, window_type):
         """处理页面内新窗口/新标签打开请求"""
-        return ExternalLinkPage(self.parent_dialog)
+        if self.parent_dialog:
+            return self.parent_dialog.register_external_link_page()
+        return ExternalLinkPage(None)
     
     def acceptNavigationRequest(self, url, navigation_type, is_main_frame):
         """拦截导航请求"""
@@ -110,6 +112,7 @@ class LoginDialog(QDialog):
         super().__init__()
         self.settings_manager = settings_manager
         self.webview = None
+        self._external_link_pages = []
 
         self.setup_ui()
         self.load_saved_credentials()
@@ -177,6 +180,17 @@ class LoginDialog(QDialog):
 
         main_layout.addWidget(self.webview)
         self.setLayout(main_layout)
+
+    def register_external_link_page(self):
+        """注册用于处理新窗口/新标签链接的页面，避免被垃圾回收"""
+        page = ExternalLinkPage(self)
+        self._external_link_pages.append(page)
+        page.destroyed.connect(lambda: self._cleanup_external_link_page(page))
+        return page
+
+    def _cleanup_external_link_page(self, page):
+        if page in self._external_link_pages:
+            self._external_link_pages.remove(page)
 
     def create_native_login_ui(self, main_layout):
         """创建原生Qt登录界面（备用方案）
