@@ -116,6 +116,7 @@ class LoginDialog(QDialog):
 
         self.setup_ui()
         self.load_saved_credentials()
+        self._maximized_once = False
 
     def setup_ui(self):
         """设置用户界面"""
@@ -181,6 +182,12 @@ class LoginDialog(QDialog):
 
         main_layout.addWidget(self.webview)
         self.setLayout(main_layout)
+
+    def showEvent(self, event):
+        super().showEvent(event)
+        if not self._maximized_once:
+            self._maximized_once = True
+            QTimer.singleShot(0, self.showMaximized)
 
     def register_external_link_page(self):
         """注册用于处理新窗口/新标签链接的页面，避免被垃圾回收"""
