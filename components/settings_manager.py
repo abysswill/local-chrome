@@ -7,6 +7,7 @@
 
 import json
 import os
+import sys
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -37,8 +38,10 @@ class SettingsManager:
             except (json.JSONDecodeError, IOError) as e:
                 print(f"加载设置文件失败: {e}")
                 return self._get_default_settings()
-        else:
-            return self._get_default_settings()
+        packaged_settings = self._load_packaged_settings()
+        if packaged_settings is not None:
+            return self._merge_settings(self._get_default_settings(), packaged_settings)
+        return self._get_default_settings()
 
     def _get_default_settings(self) -> Dict[str, Any]:
         """获取默认设置
@@ -101,6 +104,23 @@ class SettingsManager:
             else:
                 merged[key] = value
         return merged
+
+    def _load_packaged_settings(self) -> Optional[Dict[str, Any]]:
+        """从打包资源中加载设置（仅当settings文件不存在时尝试）"""
+        if not getattr(sys, 'frozen', False):
+            return None
+        base_path = Path(getattr(sys, '_MEIPASS', ''))
+        if not base_path:
+            return None
+        packaged_path = base_path / self.settings_file
+        if not packaged_path.exists():
+            return None
+        try:
+            with open(packaged_path, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except (json.JSONDecodeError, IOError) as e:
+            print(f"加载打包设置失败: {e}")
+            return None
 
     def get(self, key: str, default: Any = None) -> Any:
         """获取设置值
