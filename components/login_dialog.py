@@ -19,12 +19,33 @@ from urllib.parse import urlparse, parse_qs
 import webbrowser
 
 
+class ExternalLinkPage(QWebEnginePage):
+    """用于处理新窗口/新标签的页面，将链接交给系统浏览器"""
+
+    def __init__(self, parent_dialog):
+        super().__init__()
+        self.parent_dialog = parent_dialog
+
+    def acceptNavigationRequest(self, url, navigation_type, is_main_frame):
+        url_str = url.toString()
+        if url_str:
+            if self.parent_dialog:
+                self.parent_dialog.open_external_url(url_str)
+            else:
+                webbrowser.open(url_str)
+        return False
+
+
 class LoginPage(QWebEnginePage):
     """自定义WebEngine页面，用于拦截登录请求"""
     
     def __init__(self, parent_dialog):
         super().__init__()
         self.parent_dialog = parent_dialog
+
+    def createWindow(self, window_type):
+        """处理页面内新窗口/新标签打开请求"""
+        return ExternalLinkPage(self.parent_dialog)
     
     def acceptNavigationRequest(self, url, navigation_type, is_main_frame):
         """拦截导航请求"""
