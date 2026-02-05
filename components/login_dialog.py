@@ -133,6 +133,7 @@ class LoginDialog(QDialog):
         self.resize(1920, 1080)
         self.setMinimumSize(800, 600)  # 设置最小尺寸
         self.setModal(True)
+        self.setWindowState(self.windowState() | Qt.WindowState.WindowMaximized)
 
         # 居中显示
         self.center_dialog()
