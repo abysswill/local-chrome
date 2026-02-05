@@ -19,12 +19,35 @@ from urllib.parse import urlparse, parse_qs
 import webbrowser
 
 
+class ExternalLinkPage(QWebEnginePage):
+    """用于处理新窗口/新标签的页面，将链接交给系统浏览器"""
+
+    def __init__(self, parent_dialog):
+        super().__init__()
+        self.parent_dialog = parent_dialog
+
+    def acceptNavigationRequest(self, url, navigation_type, is_main_frame):
+        url_str = url.toString()
+        if url_str:
+            if self.parent_dialog:
+                self.parent_dialog.open_external_url(url_str)
+            else:
+                webbrowser.open(url_str)
+        return False
+
+
 class LoginPage(QWebEnginePage):
     """自定义WebEngine页面，用于拦截登录请求"""
     
     def __init__(self, parent_dialog):
         super().__init__()
         self.parent_dialog = parent_dialog
+
+    def createWindow(self, window_type):
+        """处理页面内新窗口/新标签打开请求"""
+        if self.parent_dialog:
+            return self.parent_dialog.register_external_link_page()
+        return ExternalLinkPage(None)
     
     def acceptNavigationRequest(self, url, navigation_type, is_main_frame):
         """拦截导航请求"""
@@ -89,9 +112,11 @@ class LoginDialog(QDialog):
         super().__init__()
         self.settings_manager = settings_manager
         self.webview = None
+        self._external_link_pages = []
 
         self.setup_ui()
         self.load_saved_credentials()
+        self._maximized_once = False
 
     def setup_ui(self):
         """设置用户界面"""
@@ -109,6 +134,7 @@ class LoginDialog(QDialog):
         self.resize(1920, 1080)
         self.setMinimumSize(800, 600)  # 设置最小尺寸
         self.setModal(True)
+        self.setWindowState(self.windowState() | Qt.WindowState.WindowMaximized)
 
         # 居中显示
         self.center_dialog()
@@ -125,9 +151,26 @@ class LoginDialog(QDialog):
         self.login_page = LoginPage(self)
         self.webview.setPage(self.login_page)
 
-        # 设置HTML页面路径
+        # 设置启动页面路径（可配置）
+        startup_page_url = self.settings_manager.get('startup_page_url', '').strip()
         html_path = Path(__file__).parent.parent / "01-登录.html"
-        if html_path.exists():
+
+        if startup_page_url:
+            if startup_page_url.startswith(("http://", "https://")):
+                self.webview.load(QUrl(startup_page_url))
+            else:
+                startup_path = Path(startup_page_url)
+                if not startup_path.is_absolute():
+                    startup_path = Path(__file__).parent.parent / startup_page_url
+                if startup_path.exists():
+                    self.webview.load(QUrl.fromLocalFile(str(startup_path.resolve())))
+                elif html_path.exists():
+                    self.webview.load(QUrl.fromLocalFile(str(html_path.resolve())))
+                else:
+                    # 如果HTML文件不存在，使用原生Qt界面
+                    self.create_native_login_ui(main_layout)
+                    return
+        elif html_path.exists():
             self.webview.load(QUrl.fromLocalFile(str(html_path.resolve())))
         else:
             # 如果HTML文件不存在，使用原生Qt界面
@@ -139,6 +182,23 @@ class LoginDialog(QDialog):
 
         main_layout.addWidget(self.webview)
         self.setLayout(main_layout)
+
+    def showEvent(self, event):
+        super().showEvent(event)
+        if not self._maximized_once:
+            self._maximized_once = True
+            QTimer.singleShot(0, self.showMaximized)
+
+    def register_external_link_page(self):
+        """注册用于处理新窗口/新标签链接的页面，避免被垃圾回收"""
+        page = ExternalLinkPage(self)
+        self._external_link_pages.append(page)
+        page.destroyed.connect(lambda: self._cleanup_external_link_page(page))
+        return page
+
+    def _cleanup_external_link_page(self, page):
+        if page in self._external_link_pages:
+            self._external_link_pages.remove(page)
 
     def create_native_login_ui(self, main_layout):
         """创建原生Qt登录界面（备用方案）
