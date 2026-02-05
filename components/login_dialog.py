@@ -125,9 +125,26 @@ class LoginDialog(QDialog):
         self.login_page = LoginPage(self)
         self.webview.setPage(self.login_page)
 
-        # 设置HTML页面路径
+        # 设置启动页面路径（可配置）
+        startup_page_url = self.settings_manager.get('startup_page_url', '').strip()
         html_path = Path(__file__).parent.parent / "01-登录.html"
-        if html_path.exists():
+
+        if startup_page_url:
+            if startup_page_url.startswith(("http://", "https://")):
+                self.webview.load(QUrl(startup_page_url))
+            else:
+                startup_path = Path(startup_page_url)
+                if not startup_path.is_absolute():
+                    startup_path = Path(__file__).parent.parent / startup_page_url
+                if startup_path.exists():
+                    self.webview.load(QUrl.fromLocalFile(str(startup_path.resolve())))
+                elif html_path.exists():
+                    self.webview.load(QUrl.fromLocalFile(str(html_path.resolve())))
+                else:
+                    # 如果HTML文件不存在，使用原生Qt界面
+                    self.create_native_login_ui(main_layout)
+                    return
+        elif html_path.exists():
             self.webview.load(QUrl.fromLocalFile(str(html_path.resolve())))
         else:
             # 如果HTML文件不存在，使用原生Qt界面
