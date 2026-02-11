@@ -11,7 +11,7 @@ from PyQt6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit,
     QPushButton, QCheckBox, QFrame, QMessageBox, QSpacerItem, QSizePolicy
 )
-from PyQt6.QtCore import Qt, QTimer, pyqtSignal, QUrl
+from PyQt6.QtCore import Qt, QTimer, pyqtSignal, QUrl, QStandardPaths
 from PyQt6.QtGui import QFont, QIcon, QPixmap
 from PyQt6.QtWebEngineWidgets import QWebEngineView
 from PyQt6.QtWebEngineCore import QWebEnginePage, QWebEngineProfile
@@ -155,7 +155,7 @@ class LoginDialog(QDialog):
         self.webview = QWebEngineView()
 
         # 使用持久化Profile，确保外部页面的cookie/localStorage可跨重启保留
-        profile_path = Path("config") / "web_profile"
+        profile_path = self._get_web_profile_path()
         profile_path.mkdir(parents=True, exist_ok=True)
         self.web_profile = QWebEngineProfile("desktop_manager_profile", self)
         self.web_profile.setPersistentStoragePath(str(profile_path.resolve()))
@@ -205,6 +205,15 @@ class LoginDialog(QDialog):
         if not self._maximized_once:
             self._maximized_once = True
             QTimer.singleShot(0, self.showMaximized)
+
+    def _get_web_profile_path(self) -> Path:
+        """获取WebView持久化目录（优先用户可写路径）"""
+        app_data_dir = QStandardPaths.writableLocation(QStandardPaths.StandardLocation.AppDataLocation)
+        if app_data_dir:
+            return Path(app_data_dir) / "web_profile"
+
+        # 兜底到项目目录（开发环境）
+        return Path("config") / "web_profile"
 
     def register_external_link_page(self):
         """注册用于处理新窗口/新标签链接的页面，避免被垃圾回收"""
