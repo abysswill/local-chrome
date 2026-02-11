@@ -14,7 +14,7 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt, QTimer, pyqtSignal, QUrl
 from PyQt6.QtGui import QFont, QIcon, QPixmap
 from PyQt6.QtWebEngineWidgets import QWebEngineView
-from PyQt6.QtWebEngineCore import QWebEnginePage
+from PyQt6.QtWebEngineCore import QWebEnginePage, QWebEngineProfile
 from urllib.parse import urlparse, parse_qs
 import webbrowser
 
@@ -22,8 +22,11 @@ import webbrowser
 class ExternalLinkPage(QWebEnginePage):
     """用于处理新窗口/新标签的页面，将链接交给系统浏览器"""
 
-    def __init__(self, parent_dialog):
-        super().__init__()
+    def __init__(self, parent_dialog, profile=None):
+        if profile is not None:
+            super().__init__(profile, parent_dialog)
+        else:
+            super().__init__(parent_dialog)
         self.parent_dialog = parent_dialog
 
     def acceptNavigationRequest(self, url, navigation_type, is_main_frame):
@@ -39,8 +42,11 @@ class ExternalLinkPage(QWebEnginePage):
 class LoginPage(QWebEnginePage):
     """自定义WebEngine页面，用于拦截登录请求"""
     
-    def __init__(self, parent_dialog):
-        super().__init__()
+    def __init__(self, parent_dialog, profile=None):
+        if profile is not None:
+            super().__init__(profile, parent_dialog)
+        else:
+            super().__init__(parent_dialog)
         self.parent_dialog = parent_dialog
 
     def createWindow(self, window_type):
@@ -112,6 +118,7 @@ class LoginDialog(QDialog):
         super().__init__()
         self.settings_manager = settings_manager
         self.webview = None
+        self.web_profile = None
         self._external_link_pages = []
 
         self.setup_ui()
@@ -146,9 +153,19 @@ class LoginDialog(QDialog):
 
         # 创建WebView来显示HTML登录页面
         self.webview = QWebEngineView()
+
+        # 使用持久化Profile，确保外部页面的cookie/localStorage可跨重启保留
+        profile_path = Path("config") / "web_profile"
+        profile_path.mkdir(parents=True, exist_ok=True)
+        self.web_profile = QWebEngineProfile("desktop_manager_profile", self)
+        self.web_profile.setPersistentStoragePath(str(profile_path.resolve()))
+        self.web_profile.setCachePath(str((profile_path / "cache").resolve()))
+        self.web_profile.setPersistentCookiesPolicy(
+            QWebEngineProfile.PersistentCookiesPolicy.ForcePersistentCookies
+        )
         
         # 设置自定义页面来拦截URL
-        self.login_page = LoginPage(self)
+        self.login_page = LoginPage(self, self.web_profile)
         self.webview.setPage(self.login_page)
 
         # 设置启动页面路径（可配置）
@@ -191,7 +208,7 @@ class LoginDialog(QDialog):
 
     def register_external_link_page(self):
         """注册用于处理新窗口/新标签链接的页面，避免被垃圾回收"""
-        page = ExternalLinkPage(self)
+        page = ExternalLinkPage(self, self.web_profile)
         self._external_link_pages.append(page)
         page.destroyed.connect(lambda: self._cleanup_external_link_page(page))
         return page
