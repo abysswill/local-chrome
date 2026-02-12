@@ -8,7 +8,7 @@ import sys
 import os
 from pathlib import Path
 from PyQt6.QtWidgets import (
-    QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit,
+    QApplication, QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit,
     QPushButton, QCheckBox, QFrame, QMessageBox, QSpacerItem, QSizePolicy
 )
 from PyQt6.QtCore import Qt, QTimer, pyqtSignal, QUrl, QStandardPaths
@@ -104,6 +104,15 @@ class LoginPage(QWebEnginePage):
         
         # 允许其他导航（包括外部URL和已存在的文件URL）
         return super().acceptNavigationRequest(url, navigation_type, is_main_frame)
+
+    def javaScriptAlert(self, security_origin, msg):
+        """拦截网页alert弹窗，避免调试信息影响终端用户"""
+        print(f"[WebAlert]{security_origin.toString()}: {msg}")
+
+    def javaScriptConfirm(self, security_origin, msg):
+        """默认不弹confirm，返回False"""
+        print(f"[WebConfirm]{security_origin.toString()}: {msg}")
+        return False
 
 
 class LoginDialog(QDialog):
@@ -225,6 +234,32 @@ class LoginDialog(QDialog):
     def _cleanup_external_link_page(self, page):
         if page in self._external_link_pages:
             self._external_link_pages.remove(page)
+
+    def closeEvent(self, event):
+        """关闭窗口时清理WebEngine资源，避免后台进程残留"""
+        try:
+            if self.webview:
+                self.webview.setPage(QWebEnginePage(self.web_profile, self))
+                self.webview.deleteLater()
+                self.webview = None
+
+            for page in self._external_link_pages:
+                page.deleteLater()
+            self._external_link_pages.clear()
+
+            if self.login_page:
+                self.login_page.deleteLater()
+
+            if self.web_profile:
+                self.web_profile.deleteLater()
+        except Exception:
+            pass
+
+        super().closeEvent(event)
+
+        app = QApplication.instance()
+        if app:
+            app.quit()
 
     def create_native_login_ui(self, main_layout):
         """创建原生Qt登录界面（备用方案）
