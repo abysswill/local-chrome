@@ -95,7 +95,7 @@ python main.py
 
 ## 配置说明
 
-应用程序配置文件位于 `config/settings.json`，包含以下主要设置：
+应用程序配置文件默认位于用户目录（Windows: `%APPDATA%/Desktop Manager/config/settings.json`），包含以下主要设置：
 
 ```json
 {
