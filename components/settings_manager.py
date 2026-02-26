@@ -7,6 +7,7 @@
 
 import json
 import os
+import sys
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -17,11 +18,21 @@ class SettingsManager:
         """初始化设置管理器
 
         Args:
-            settings_file: 设置文件路径
+            settings_file: 设置文件路径（打包资源中的相对路径）
         """
-        self.settings_file = Path(settings_file)
-        self.settings_file.parent.mkdir(exist_ok=True)
+        self.packaged_settings_rel_path = Path(settings_file)
+        self.settings_file = self._resolve_user_settings_path(self.packaged_settings_rel_path)
+        self.settings_file.parent.mkdir(parents=True, exist_ok=True)
         self._settings = self._load_settings()
+
+    def _resolve_user_settings_path(self, default_rel_path: Path) -> Path:
+        """解析用户可写的settings路径（优先AppData）"""
+        app_data = os.environ.get('APPDATA')
+        if app_data:
+            return Path(app_data) / 'Desktop Manager' / default_rel_path
+
+        # 非Windows或环境变量缺失时兜底到用户目录
+        return Path.home() / '.desktop_manager' / default_rel_path
 
     def _load_settings(self) -> Dict[str, Any]:
         """从文件加载设置
@@ -32,12 +43,30 @@ class SettingsManager:
         if self.settings_file.exists():
             try:
                 with open(self.settings_file, 'r', encoding='utf-8') as f:
-                    return json.load(f)
+                    loaded_settings = json.load(f)
+                    return self._merge_settings(self._get_default_settings(), loaded_settings)
             except (json.JSONDecodeError, IOError) as e:
                 print(f"加载设置文件失败: {e}")
                 return self._get_default_settings()
-        else:
-            return self._get_default_settings()
+        legacy_settings = self._load_legacy_settings()
+        if legacy_settings is not None:
+            return self._merge_settings(self._get_default_settings(), legacy_settings)
+
+        packaged_settings = self._load_packaged_settings()
+        if packaged_settings is not None:
+            return self._merge_settings(self._get_default_settings(), packaged_settings)
+        return self._get_default_settings()
+
+    def _load_legacy_settings(self) -> Optional[Dict[str, Any]]:
+        """兼容读取历史工作目录下的config/settings.json"""
+        legacy_path = Path("config") / "settings.json"
+        if self.settings_file == legacy_path or not legacy_path.exists():
+            return None
+        try:
+            with open(legacy_path, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except (json.JSONDecodeError, IOError):
+            return None
 
     def _get_default_settings(self) -> Dict[str, Any]:
         """获取默认设置
@@ -64,6 +93,7 @@ class SettingsManager:
                 "ai": "https://example.com/ai",
                 "help": "https://example.com/help"
             },
+            "startup_page_url": "",
             "default_browser": "system",
             "auto_start": False,
             "data_sync": False,
@@ -89,6 +119,33 @@ class SettingsManager:
             "check_updates": True,
             "version": "1.0.0"
         }
+
+    def _merge_settings(self, base: Dict[str, Any], overrides: Dict[str, Any]) -> Dict[str, Any]:
+        """合并设置（保留默认值，覆盖自定义项）"""
+        merged = dict(base)
+        for key, value in overrides.items():
+            if isinstance(value, dict) and isinstance(merged.get(key), dict):
+                merged[key] = self._merge_settings(merged[key], value)
+            else:
+                merged[key] = value
+        return merged
+
+    def _load_packaged_settings(self) -> Optional[Dict[str, Any]]:
+        """从打包资源中加载设置（仅当settings文件不存在时尝试）"""
+        if not getattr(sys, 'frozen', False):
+            return None
+        base_path = Path(getattr(sys, '_MEIPASS', ''))
+        if not base_path:
+            return None
+        packaged_path = base_path / self.packaged_settings_rel_path
+        if not packaged_path.exists():
+            return None
+        try:
+            with open(packaged_path, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except (json.JSONDecodeError, IOError) as e:
+            print(f"加载打包设置失败: {e}")
+            return None
 
     def get(self, key: str, default: Any = None) -> Any:
         """获取设置值

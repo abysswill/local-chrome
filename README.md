@@ -95,7 +95,7 @@ python main.py
 
 ## 配置说明
 
-应用程序配置文件位于 `config/settings.json`，包含以下主要设置：
+应用程序配置文件默认位于用户目录（Windows: `%APPDATA%/Desktop Manager/config/settings.json`），包含以下主要设置：
 
 ```json
 {
@@ -109,6 +109,7 @@ python main.py
     "ai": "https://example.com/ai",
     "help": "https://example.com/help"
   },
+  "startup_page_url": "",
   "theme_mode": "light",
   "auto_login": false,
   "default_browser": "system"
@@ -142,6 +143,12 @@ python main.py
 ```bash
 pip install pyinstaller
 pyinstaller --windowed --onefile main.py
+```
+
+或使用 `build_exe.bat` 并传入启动页面地址（可选）：
+
+```bat
+build_exe.bat "https://example.com/login"
 ```
 
 ## 系统要求
