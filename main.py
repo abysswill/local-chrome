@@ -52,6 +52,9 @@ class DesktopApp(QApplication):
         # 初始化样式
         self.init_style()
 
+        # 主对话框引用，避免被回收
+        self.login_dialog = None
+
         # 创建主窗口
         self.create_main_window()
 
@@ -69,9 +72,10 @@ class DesktopApp(QApplication):
 
     def show_login_dialog(self):
         """显示登录对话框"""
-        login_dialog = LoginDialog(self.settings_manager)
-        # 显示对话框（登录成功后会在同一窗口中加载主页面，不会关闭对话框）
-        login_dialog.exec()
+        self.login_dialog = LoginDialog(self.settings_manager)
+        # 对话框关闭后退出应用，避免后台残留进程
+        self.login_dialog.finished.connect(self.quit)
+        self.login_dialog.show()
 
 def main():
     """主函数"""
