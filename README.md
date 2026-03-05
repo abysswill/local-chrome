@@ -99,6 +99,11 @@ python main.py
 
 ```json
 {
+  "app": {
+    "name": "桌面管理程序",
+    "logo_text": "DM",
+    "icon_path": "resources/icon.png"
+  },
   "urls": {
     "user_management": "https://example.com/patients",
     "assessment": "https://example.com/assessment",
@@ -148,7 +153,7 @@ pyinstaller --windowed --onefile main.py
 或使用 `build_exe.bat` 并传入启动页面地址（可选）：
 
 ```bat
-build_exe.bat "https://example.com/login"
+build_exe.bat "https://example.com/login" "桌面管理程序" "DM" "resources/icon.png"
 ```
 
 ## 系统要求

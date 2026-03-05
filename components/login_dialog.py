@@ -129,6 +129,8 @@ class LoginDialog(QDialog):
         self.webview = None
         self.web_profile = None
         self._external_link_pages = []
+        self.app_name = self.settings_manager.get('app.name', '桌面管理程序')
+        self.app_logo_text = self.settings_manager.get('app.logo_text', 'DM')
 
         self.setup_ui()
         self.load_saved_credentials()
@@ -136,7 +138,7 @@ class LoginDialog(QDialog):
 
     def setup_ui(self):
         """设置用户界面"""
-        self.setWindowTitle("登录 - 桌面管理程序")
+        self.setWindowTitle(f"登录 - {self.app_name}")
         
         # 设置窗口标志，确保有最小化、最大化、关闭按钮
         # 对于对话框，我们需要保持Dialog类型但添加按钮提示
@@ -272,7 +274,7 @@ class LoginDialog(QDialog):
         logo_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         # Logo图标
-        logo_label = QLabel("DM")
+        logo_label = QLabel(self.app_logo_text)
         logo_label.setFixedSize(64, 64)
         logo_label.setStyleSheet("""
             QLabel {
@@ -288,7 +290,7 @@ class LoginDialog(QDialog):
         logo_layout.addWidget(logo_label)
 
         # 标题
-        title_label = QLabel("桌面管理程序")
+        title_label = QLabel(self.app_name)
         title_label.setFont(QFont("Arial", 20, QFont.Weight.Bold))
         title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         logo_layout.addWidget(title_label)
@@ -628,7 +630,7 @@ class LoginDialog(QDialog):
             if self.webview and self.webview.page():
                 self.webview.load(QUrl.fromLocalFile(str(html_path.resolve())))
                 # 更新窗口标题
-                self.setWindowTitle("桌面管理程序 - 主页面")
+                self.setWindowTitle(f"{self.app_name} - 主页面")
                 # 隐藏登录相关的原生UI（如果有）
                 if hasattr(self, 'login_button'):
                     self.login_button.setVisible(False)
@@ -661,13 +663,13 @@ class LoginDialog(QDialog):
                     # 更新窗口标题
                     file_name = html_path.stem
                     if "设置" in file_name:
-                        self.setWindowTitle("桌面管理程序 - 设置")
+                        self.setWindowTitle(f"{self.app_name} - 设置")
                     elif "登录" in file_name:
-                        self.setWindowTitle("桌面管理程序 - 登录")
+                        self.setWindowTitle(f"{self.app_name} - 登录")
                     elif "主页面" in file_name or "主页" in file_name:
-                        self.setWindowTitle("桌面管理程序 - 主页面")
+                        self.setWindowTitle(f"{self.app_name} - 主页面")
                     else:
-                        self.setWindowTitle(f"桌面管理程序 - {file_name}")
+                        self.setWindowTitle(f"{self.app_name} - {file_name}")
             else:
                 QMessageBox.warning(self, "错误", f"HTML文件不存在: {html_path}")
         except Exception as e:

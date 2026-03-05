@@ -28,26 +28,21 @@ class DesktopApp(QApplication):
     def __init__(self, argv):
         super().__init__(argv)
 
-        # 设置应用属性
-        self.setApplicationName("桌面管理程序")
-        self.setApplicationVersion("1.0.0")
-        self.setOrganizationName("Desktop Manager")
-
-        # 设置应用图标 - 处理打包后的路径问题
-        if getattr(sys, 'frozen', False):
-            # 如果是打包后的exe程序
-            icon_path = os.path.join(sys._MEIPASS, "resources", "icon.png")
-        else:
-            # 如果是开发环境
-            icon_path = "resources/icon.png"
-
-        # 如果图标文件不存在，则跳过设置图标
-        if os.path.exists(icon_path):
-            self.setWindowIcon(QIcon(icon_path))
-
         # 初始化管理器
         self.settings_manager = SettingsManager()
         self.theme_manager = ThemeManager()
+
+        # 设置应用属性（统一来源：settings.app）
+        self.app_name = self.settings_manager.get('app.name', '桌面管理程序')
+        app_icon_setting = self.settings_manager.get('app.icon_path', 'resources/icon.png')
+
+        self.setApplicationName(self.app_name)
+        self.setApplicationVersion("1.0.0")
+        self.setOrganizationName(self.app_name)
+
+        icon_path = self._resolve_icon_path(app_icon_setting)
+        if icon_path and os.path.exists(icon_path):
+            self.setWindowIcon(QIcon(icon_path))
 
         # 初始化样式
         self.init_style()
@@ -57,6 +52,20 @@ class DesktopApp(QApplication):
 
         # 创建主窗口
         self.create_main_window()
+
+    def _resolve_icon_path(self, icon_setting: str) -> str:
+        """解析图标路径（支持打包与开发环境）"""
+        if not icon_setting:
+            return ""
+
+        icon_path = Path(icon_setting)
+        if icon_path.is_absolute():
+            return str(icon_path)
+
+        if getattr(sys, 'frozen', False):
+            return str(Path(getattr(sys, '_MEIPASS', '')) / icon_path)
+
+        return str((Path(__file__).parent / icon_path).resolve())
 
     def init_style(self):
         """初始化应用样式"""

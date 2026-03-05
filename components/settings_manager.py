@@ -82,6 +82,13 @@ class SettingsManager:
             "auto_login": False,
             "remember_password": True,
 
+            # 应用配置
+            "app": {
+                "name": "桌面管理程序",
+                "logo_text": "DM",
+                "icon_path": "resources/icon.png"
+            },
+
             # 系统设置
             "urls": {
                 "user_management": "https://example.com/patients",
