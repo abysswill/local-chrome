@@ -28,32 +28,58 @@ class DesktopApp(QApplication):
     def __init__(self, argv):
         super().__init__(argv)
 
-        # 设置应用属性
-        self.setApplicationName("桌面管理程序")
-        self.setApplicationVersion("1.0.0")
-        self.setOrganizationName("Desktop Manager")
-
-        # 设置应用图标 - 处理打包后的路径问题
-        if getattr(sys, 'frozen', False):
-            # 如果是打包后的exe程序
-            icon_path = os.path.join(sys._MEIPASS, "resources", "icon.png")
-        else:
-            # 如果是开发环境
-            icon_path = "resources/icon.png"
-
-        # 如果图标文件不存在，则跳过设置图标
-        if os.path.exists(icon_path):
-            self.setWindowIcon(QIcon(icon_path))
-
         # 初始化管理器
         self.settings_manager = SettingsManager()
         self.theme_manager = ThemeManager()
 
+        # 设置应用属性（统一来源：settings.app）
+        self.app_name = self.settings_manager.get('app.name', '桌面管理程序')
+        app_icon_setting = self.settings_manager.get('app.icon_path', 'resources/icon.png')
+
+        self.setApplicationName(self.app_name)
+        self.setApplicationVersion("1.0.0")
+        self.setOrganizationName(self.app_name)
+
+        icon_path = self._resolve_icon_path(app_icon_setting)
+        if icon_path and os.path.exists(icon_path):
+            self.setWindowIcon(QIcon(icon_path))
+
         # 初始化样式
         self.init_style()
 
+        # 主对话框引用，避免被回收
+        self.login_dialog = None
+
         # 创建主窗口
         self.create_main_window()
+
+    def _resolve_icon_path(self, icon_setting: str) -> str:
+        """解析图标路径（优先用户settings目录，其次打包资源/项目目录）"""
+        if not icon_setting:
+            return ""
+
+        icon_path = Path(icon_setting)
+        if icon_path.is_absolute() and icon_path.exists():
+            return str(icon_path)
+
+        candidates = []
+
+        # 1) 相对settings.json目录（例如 AppData/.../config/logo.png）
+        settings_dir = self.settings_manager.settings_file.parent
+        candidates.append(settings_dir / icon_path)
+
+        # 2) 打包资源目录
+        if getattr(sys, 'frozen', False):
+            candidates.append(Path(getattr(sys, '_MEIPASS', '')) / icon_path)
+
+        # 3) 开发目录
+        candidates.append((Path(__file__).parent / icon_path).resolve())
+
+        for candidate in candidates:
+            if candidate.exists():
+                return str(candidate)
+
+        return ""
 
     def init_style(self):
         """初始化应用样式"""
@@ -69,9 +95,10 @@ class DesktopApp(QApplication):
 
     def show_login_dialog(self):
         """显示登录对话框"""
-        login_dialog = LoginDialog(self.settings_manager)
-        # 显示对话框（登录成功后会在同一窗口中加载主页面，不会关闭对话框）
-        login_dialog.exec()
+        self.login_dialog = LoginDialog(self.settings_manager)
+        # 对话框关闭后退出应用，避免后台残留进程
+        self.login_dialog.finished.connect(self.quit)
+        self.login_dialog.show()
 
 def main():
     """主函数"""

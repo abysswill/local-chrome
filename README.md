@@ -95,10 +95,15 @@ python main.py
 
 ## 配置说明
 
-应用程序配置文件位于 `config/settings.json`，包含以下主要设置：
+应用程序配置文件默认位于用户目录（Windows: `%APPDATA%/Desktop Manager/config/settings.json`），包含以下主要设置：
 
 ```json
 {
+  "app": {
+    "name": "桌面管理程序",
+    "logo_text": "DM",
+    "icon_path": "resources/icon.png"
+  },
   "urls": {
     "user_management": "https://example.com/patients",
     "assessment": "https://example.com/assessment",
@@ -109,6 +114,7 @@ python main.py
     "ai": "https://example.com/ai",
     "help": "https://example.com/help"
   },
+  "startup_page_url": "",
   "theme_mode": "light",
   "auto_login": false,
   "default_browser": "system"
@@ -143,6 +149,13 @@ python main.py
 pip install pyinstaller
 pyinstaller --windowed --onefile main.py
 ```
+
+或使用 `build_exe.bat` 并传入启动页面地址（可选）：
+
+```bat
+build_exe.bat "https://example.com/login" "桌面管理程序" "DM" "resources/icon.png" "resources/icon.ico"
+```
+第五个参数用于设置打包后 `exe` 图标（建议使用 `.ico` 文件）。
 
 ## 系统要求
 
