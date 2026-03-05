@@ -4,50 +4,38 @@ chcp 65001 >nul
 REM 使用指定的 Python 3.12
 set PYTHON_EXE=E:\runtime\Python312\python.exe
 
-REM 可选：设置程序名称 / 启动地址 / logo文字 / 窗口图标路径 / exe图标路径
-REM 用法：build_exe.bat "https://example.com/login" "桌面管理程序" "DM" "resources/icon.png" "resources/icon.ico"
-set "STARTUP_PAGE_URL=%~1"
-set "APP_NAME=%~2"
-set "APP_LOGO_TEXT=%~3"
-set "APP_ICON_PATH=%~4"
-set "APP_EXE_ICON=%~5"
-if "%APP_NAME%"=="" set "APP_NAME=桌面管理程序"
-if "%APP_LOGO_TEXT%"=="" set "APP_LOGO_TEXT=DM"
-if "%APP_ICON_PATH%"=="" set "APP_ICON_PATH=resources/icon.png"
-if "%APP_EXE_ICON%"=="" set "APP_EXE_ICON=%APP_ICON_PATH%"
-
-echo ===== %APP_NAME% 打包工具 =====
-echo.
-if not "%STARTUP_PAGE_URL%"=="" (
-    if not exist config mkdir config
-    > config\settings.json (
-        echo {
-        echo   "app": {"name": "%APP_NAME%", "logo_text": "%APP_LOGO_TEXT%", "icon_path": "%APP_ICON_PATH%"},
-        echo   "startup_page_url": "%STARTUP_PAGE_URL%"
-        echo }
-    )
-    echo 已写入启动页面地址: %STARTUP_PAGE_URL%
-) else (
-    echo 未设置启动页面地址，默认使用 01-登录.html
-)
-
-REM 确保 settings.json 存在（仅打包该文件，避免把运行时缓存目录打进包）
+REM 统一从 settings.json 读取配置（不再通过命令行参数覆盖）
 if not exist config mkdir config
 if not exist config\settings.json (
     > config\settings.json (
         echo {
-        echo   "app": {"name": "%APP_NAME%", "logo_text": "%APP_LOGO_TEXT%", "icon_path": "%APP_ICON_PATH%"},
+        echo   "app": {"name": "桌面管理程序", "logo_text": "DM", "icon_path": "resources/icon.png"},
         echo   "startup_page_url": ""
         echo }
     )
+)
+
+for /f "usebackq delims=" %%i in (`%PYTHON_EXE% -c "import json, pathlib; p=pathlib.Path('config/settings.json'); d=json.loads(p.read_text(encoding='utf-8')); print(d.get('app',{}).get('name','桌面管理程序'))"`) do set "APP_NAME=%%i"
+for /f "usebackq delims=" %%i in (`%PYTHON_EXE% -c "import json, pathlib; p=pathlib.Path('config/settings.json'); d=json.loads(p.read_text(encoding='utf-8')); print(d.get('app',{}).get('icon_path','resources/icon.png'))"`) do set "APP_ICON_PATH=%%i"
+
+if "%APP_NAME%"=="" set "APP_NAME=桌面管理程序"
+if "%APP_ICON_PATH%"=="" set "APP_ICON_PATH=resources/icon.png"
+
+set "ICON_EXT=%APP_ICON_PATH:~-4%"
+set "ICON_OPTION="
+if /I "%ICON_EXT%"==".ico" set "ICON_OPTION=--icon %APP_ICON_PATH%"
+if /I "%ICON_EXT%"==".exe" set "ICON_OPTION=--icon %APP_ICON_PATH%"
+
+echo ===== %APP_NAME% 打包工具 =====
+echo.
+if "%ICON_OPTION%"=="" (
+    echo 提示：settings.json 中 app.icon_path 不是 .ico/.exe，已跳过 EXE 图标参数（运行时窗口图标仍可使用该路径）。
 )
 
 REM 确认 PyInstaller 已可用
 echo 使用 PyInstaller 版本:
 %PYTHON_EXE% -m PyInstaller --version
 echo.
-
-
 
 echo 开始打包...
 echo 注意：打包过程可能需要几分钟，请耐心等待...
@@ -58,7 +46,7 @@ REM 打包命令 - 单文件模式，修复 Qt WebEngine DLL 问题
     --windowed ^
     --onefile ^
     --name "%APP_NAME%" ^
-    --icon "%APP_EXE_ICON%" ^
+    %ICON_OPTION% ^
     --add-data "01-登录.html;." ^
     --add-data "02-主页面.html;." ^
     --add-data "03-设置.html;." ^
