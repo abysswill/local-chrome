@@ -4,15 +4,17 @@ chcp 65001 >nul
 REM 使用指定的 Python 3.12
 set PYTHON_EXE=E:\runtime\Python312\python.exe
 
-REM 可选：设置程序名称 / 启动地址 / logo文字 / 图标路径
-REM 用法：build_exe.bat "https://example.com/login" "桌面管理程序" "DM" "resources/icon.png"
+REM 可选：设置程序名称 / 启动地址 / logo文字 / 窗口图标路径 / exe图标路径
+REM 用法：build_exe.bat "https://example.com/login" "桌面管理程序" "DM" "resources/icon.png" "resources/icon.ico"
 set "STARTUP_PAGE_URL=%~1"
 set "APP_NAME=%~2"
 set "APP_LOGO_TEXT=%~3"
 set "APP_ICON_PATH=%~4"
+set "APP_EXE_ICON=%~5"
 if "%APP_NAME%"=="" set "APP_NAME=桌面管理程序"
 if "%APP_LOGO_TEXT%"=="" set "APP_LOGO_TEXT=DM"
 if "%APP_ICON_PATH%"=="" set "APP_ICON_PATH=resources/icon.png"
+if "%APP_EXE_ICON%"=="" set "APP_EXE_ICON=%APP_ICON_PATH%"
 
 echo ===== %APP_NAME% 打包工具 =====
 echo.
@@ -46,6 +48,7 @@ echo 使用 PyInstaller 版本:
 echo.
 
 
+
 echo 开始打包...
 echo 注意：打包过程可能需要几分钟，请耐心等待...
 echo.
@@ -55,6 +58,7 @@ REM 打包命令 - 单文件模式，修复 Qt WebEngine DLL 问题
     --windowed ^
     --onefile ^
     --name "%APP_NAME%" ^
+    --icon "%APP_EXE_ICON%" ^
     --add-data "01-登录.html;." ^
     --add-data "02-主页面.html;." ^
     --add-data "03-设置.html;." ^

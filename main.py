@@ -54,18 +54,32 @@ class DesktopApp(QApplication):
         self.create_main_window()
 
     def _resolve_icon_path(self, icon_setting: str) -> str:
-        """解析图标路径（支持打包与开发环境）"""
+        """解析图标路径（优先用户settings目录，其次打包资源/项目目录）"""
         if not icon_setting:
             return ""
 
         icon_path = Path(icon_setting)
-        if icon_path.is_absolute():
+        if icon_path.is_absolute() and icon_path.exists():
             return str(icon_path)
 
-        if getattr(sys, 'frozen', False):
-            return str(Path(getattr(sys, '_MEIPASS', '')) / icon_path)
+        candidates = []
 
-        return str((Path(__file__).parent / icon_path).resolve())
+        # 1) 相对settings.json目录（例如 AppData/.../config/logo.png）
+        settings_dir = self.settings_manager.settings_file.parent
+        candidates.append(settings_dir / icon_path)
+
+        # 2) 打包资源目录
+        if getattr(sys, 'frozen', False):
+            candidates.append(Path(getattr(sys, '_MEIPASS', '')) / icon_path)
+
+        # 3) 开发目录
+        candidates.append((Path(__file__).parent / icon_path).resolve())
+
+        for candidate in candidates:
+            if candidate.exists():
+                return str(candidate)
+
+        return ""
 
     def init_style(self):
         """初始化应用样式"""

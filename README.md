@@ -153,8 +153,9 @@ pyinstaller --windowed --onefile main.py
 或使用 `build_exe.bat` 并传入启动页面地址（可选）：
 
 ```bat
-build_exe.bat "https://example.com/login" "桌面管理程序" "DM" "resources/icon.png"
+build_exe.bat "https://example.com/login" "桌面管理程序" "DM" "resources/icon.png" "resources/icon.ico"
 ```
+第五个参数用于设置打包后 `exe` 图标（建议使用 `.ico` 文件）。
 
 ## 系统要求
 
