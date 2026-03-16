@@ -34,7 +34,7 @@ class DesktopApp(QApplication):
 
         # 设置应用属性（统一来源：settings.app）
         self.app_name = self.settings_manager.get('app.name', '桌面管理程序')
-        app_icon_setting = self.settings_manager.get('app.icon_path', 'resources/icon.png')
+        app_icon_setting = self.settings_manager.get('app.icon_path', 'resources/icon.ico')
 
         self.setApplicationName(self.app_name)
         self.setApplicationVersion("1.0.0")
@@ -64,7 +64,7 @@ class DesktopApp(QApplication):
 
         candidates = []
 
-        # 1) 相对settings.json目录（例如 AppData/.../config/logo.png）
+        # 1) 相对settings.json目录（例如 AppData/.../config/icon.ico）
         settings_dir = self.settings_manager.settings_file.parent
         candidates.append(settings_dir / icon_path)
 

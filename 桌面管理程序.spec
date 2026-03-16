@@ -5,7 +5,7 @@ a = Analysis(
     ['main.py'],
     pathex=['E:\\runtime\\Python312\\Lib\\site-packages\\PyQt6\\Qt6\\bin'],
     binaries=[],
-    datas=[('01-登录.html', '.'), ('02-主页面.html', '.'), ('03-设置.html', '.'), ('resources', 'resources'), ('config', 'config'), ('components', 'components'), ('utils', 'utils')],
+    datas=[('01-登录.html', '.'), ('02-主页面.html', '.'), ('03-设置.html', '.'), ('resources', 'resources'), ('config\\settings.json', 'config'), ('components', 'components'), ('utils', 'utils')],
     hiddenimports=['PyQt6.QtWebEngineWidgets', 'PyQt6.QtWebEngineCore', 'PyQt6.QtWebEngine', 'PyQt6.QtCore', 'PyQt6.QtGui', 'PyQt6.QtWidgets', 'PyQt6.QtNetwork', 'PyQt6.QtWebChannel'],
     hookspath=[],
     hooksconfig={},
@@ -35,4 +35,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
+    icon=['resources\\icon.png'],
 )

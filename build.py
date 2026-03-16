@@ -25,14 +25,14 @@ def check_dependencies():
 
 def create_icon():
     """创建应用图标"""
-    icon_path = Path("resources/icon.png")
+    icon_path = Path("resources/icon.ico")
     if not icon_path.exists():
         print("创建默认应用图标...")
         icon_path.parent.mkdir(exist_ok=True)
 
         # 这里可以添加图标生成代码
         # 或者手动准备一个icon.png文件
-        print("请手动添加 resources/icon.png 文件")
+        print("请手动添加 resources/icon.ico 文件")
 
 def build_exe():
     """构建可执行文件"""
@@ -44,7 +44,7 @@ def build_exe():
         "--windowed",  # 无控制台窗口
         "--onefile",   # 单文件模式
         "--name", "桌面管理程序",  # 程序名称
-        "--icon", "resources/icon.png",  # 图标
+        "--icon", "resources/icon.ico",  # 图标
         "--add-data", "01-登录.html;.",  # 添加HTML文件
         "--add-data", "02-主页面.html;.",  # 添加HTML文件
         "--add-data", "03-设置.html;.",   # 添加HTML文件
