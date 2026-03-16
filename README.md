@@ -102,7 +102,7 @@ python main.py
   "app": {
     "name": "桌面管理程序",
     "logo_text": "DM",
-    "icon_path": "resources/icon.ico"
+    "icon_path": "resources/icon.png"
   },
   "urls": {
     "user_management": "https://example.com/patients",

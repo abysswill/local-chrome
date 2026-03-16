@@ -86,7 +86,7 @@ class SettingsManager:
             "app": {
                 "name": "桌面管理程序",
                 "logo_text": "DM",
-                "icon_path": "resources/icon.ico"
+                "icon_path": "resources/icon.png"
             },
 
             # 系统设置
