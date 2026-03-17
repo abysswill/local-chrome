@@ -7,6 +7,7 @@ Windows桌面应用程序，用于Web管理系统的功能导航
 
 import sys
 import os
+import ctypes
 from pathlib import Path
 from PyQt6.QtWidgets import QApplication
 from PyQt6.QtGui import QIcon
@@ -40,6 +41,7 @@ class DesktopApp(QApplication):
         self.setApplicationName(self.app_name)
         self.setApplicationVersion("1.0.0")
         self.setOrganizationName(self.app_name)
+        self._set_windows_appusermodel_id()
 
         icon_path = self._resolve_icon_path(app_icon_setting)
         if icon_path and os.path.exists(icon_path):
@@ -60,6 +62,16 @@ class DesktopApp(QApplication):
 
         # 创建主窗口
         self.create_main_window()
+
+    def _set_windows_appusermodel_id(self):
+        """设置Windows任务栏分组与图标绑定ID"""
+        if sys.platform != "win32":
+            return
+        app_id = f"DesktopManager.{self._build_server_name(self.app_name)}"
+        try:
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(app_id)
+        except Exception:
+            pass
 
     def _resolve_icon_path(self, icon_setting: str) -> str:
         """解析图标路径（优先用户settings目录，其次打包资源/项目目录）"""

@@ -140,9 +140,9 @@ class LoginDialog(QDialog):
         """设置用户界面"""
         self.setWindowTitle(f"登录 - {self.app_name}")
 
-        app = QApplication.instance()
-        if app and not app.windowIcon().isNull():
-            self.setWindowIcon(app.windowIcon())
+        app_icon = self._resolve_app_icon()
+        if app_icon and not app_icon.isNull():
+            self.setWindowIcon(app_icon)
         
         # 设置窗口标志，确保有最小化、最大化、关闭按钮
         # 对于对话框，我们需要保持Dialog类型但添加按钮提示
@@ -150,6 +150,7 @@ class LoginDialog(QDialog):
         flags |= Qt.WindowType.WindowCloseButtonHint
         flags |= Qt.WindowType.WindowMinimizeButtonHint
         flags |= Qt.WindowType.WindowMaximizeButtonHint
+        flags |= Qt.WindowType.Window
         self.setWindowFlags(flags)
         
         # 设置窗口大小（可调整大小，默认1920x1080）
@@ -401,6 +402,30 @@ class LoginDialog(QDialog):
                 border-color: #2563EB;
             }
         """)
+
+    def _resolve_app_icon(self):
+        """解析与主程序一致的图标"""
+        app = QApplication.instance()
+        if app and not app.windowIcon().isNull():
+            return app.windowIcon()
+
+        icon_setting = self.settings_manager.get('app.icon_path', 'resources/icon.png')
+        icon_path = Path(icon_setting)
+        candidates = []
+
+        if icon_path.is_absolute():
+            candidates.append(icon_path)
+        else:
+            candidates.append(self.settings_manager.settings_file.parent / icon_path)
+            if getattr(sys, 'frozen', False):
+                candidates.append(Path(getattr(sys, '_MEIPASS', '')) / icon_path)
+            candidates.append((Path(__file__).parent.parent / icon_path).resolve())
+
+        for candidate in candidates:
+            if candidate.exists():
+                return QIcon(str(candidate))
+
+        return QIcon()
 
     def center_dialog(self):
         """将对话框居中显示"""
