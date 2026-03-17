@@ -150,12 +150,13 @@ pip install pyinstaller
 pyinstaller --windowed --onefile main.py
 ```
 
-或使用 `build_exe.bat`（配置统一从 `config/settings.json` 读取）：
+或使用 `build_exe.bat`（默认 `onedir`，启动更快；配置统一从 `config/settings.json` 读取）：
 
 ```bat
 build_exe.bat
 ```
 `settings.json` 中 `app.icon_path` 建议使用 `.ico` 或 `.exe` 路径用于打包 EXE 图标；若填写 `.png` 将仅用于运行时窗口图标。
+如需单文件分发可使用：`build_exe.bat onefile`（启动会比默认模式慢）。
 
 ## 系统要求
 

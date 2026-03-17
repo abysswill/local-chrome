@@ -4,6 +4,12 @@ chcp 65001 >nul
 REM 使用指定的 Python 3.12
 set PYTHON_EXE=E:\runtime\Python312\python.exe
 
+REM 打包模式：默认 onedir（启动更快）；传入 onefile 可切换单文件
+set "BUILD_MODE=%~1"
+if "%BUILD_MODE%"=="" set "BUILD_MODE=onedir"
+set "PYI_BUNDLE_ARG=--onedir"
+if /I "%BUILD_MODE%"=="onefile" set "PYI_BUNDLE_ARG=--onefile"
+
 REM 统一从 settings.json 读取配置（不再通过命令行参数覆盖）
 if not exist config mkdir config
 if not exist config\settings.json (
@@ -26,7 +32,7 @@ set "ICON_OPTION="
 if /I "%ICON_EXT%"==".ico" set "ICON_OPTION=--icon %APP_ICON_PATH%"
 if /I "%ICON_EXT%"==".exe" set "ICON_OPTION=--icon %APP_ICON_PATH%"
 
-echo ===== %APP_NAME% 打包工具 =====
+echo ===== %APP_NAME% 打包工具（模式：%BUILD_MODE%） =====
 echo.
 if "%ICON_OPTION%"=="" (
     echo 提示：settings.json 中 app.icon_path 不是 .ico/.exe，已跳过 EXE 图标参数（运行时窗口图标仍可使用该路径）。
@@ -41,10 +47,10 @@ echo 开始打包...
 echo 注意：打包过程可能需要几分钟，请耐心等待...
 echo.
 
-REM 打包命令 - 单文件模式，修复 Qt WebEngine DLL 问题
+REM 打包命令 - 默认目录模式（启动更快），可切换 onefile
 %PYTHON_EXE% -m PyInstaller ^
     --windowed ^
-    --onefile ^
+    %PYI_BUNDLE_ARG% ^
     --name "%APP_NAME%" ^
     %ICON_OPTION% ^
     --add-data "01-登录.html;." ^
@@ -74,7 +80,7 @@ if errorlevel 1 (
 
 echo.
 echo ===== 打包完成 =====
-echo 可执行文件位置: dist\%APP_NAME%.exe
+echo 可执行文件位置: dist\%APP_NAME%\%APP_NAME%.exe （onefile 模式时为 dist\%APP_NAME%.exe）
 echo.
 echo 提示：如果遇到缺少模块的错误，可能需要添加更多的 --hidden-import 参数
 echo.
