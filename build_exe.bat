@@ -82,6 +82,17 @@ echo.
 echo ===== 打包完成 =====
 echo 可执行文件位置: dist\%APP_NAME%\%APP_NAME%.exe （onefile 模式时为 dist\%APP_NAME%.exe）
 echo.
+
+if /I "%BUILD_MODE%"=="onedir" (
+    echo.
+    echo 正在生成单文件分发压缩包...
+    powershell -NoProfile -Command "if (Test-Path 'dist\%APP_NAME%.zip') { Remove-Item 'dist\%APP_NAME%.zip' -Force }; Compress-Archive -Path 'dist\%APP_NAME%\*' -DestinationPath 'dist\%APP_NAME%.zip' -Force"
+    if errorlevel 1 (
+        echo 警告：压缩包生成失败，可直接分发 dist\%APP_NAME% 文件夹。
+    ) else (
+        echo 压缩包位置: dist\%APP_NAME%.zip
+    )
+)
 echo 提示：如果遇到缺少模块的错误，可能需要添加更多的 --hidden-import 参数
 echo.
 pause
