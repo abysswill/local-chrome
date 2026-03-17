@@ -8,23 +8,52 @@ import sys
 import os
 from pathlib import Path
 from PyQt6.QtWidgets import (
-    QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit,
+    QApplication, QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit,
     QPushButton, QCheckBox, QFrame, QMessageBox, QSpacerItem, QSizePolicy
 )
-from PyQt6.QtCore import Qt, QTimer, pyqtSignal, QUrl
+from PyQt6.QtCore import Qt, QTimer, pyqtSignal, QUrl, QStandardPaths
 from PyQt6.QtGui import QFont, QIcon, QPixmap
 from PyQt6.QtWebEngineWidgets import QWebEngineView
-from PyQt6.QtWebEngineCore import QWebEnginePage
+from PyQt6.QtWebEngineCore import QWebEnginePage, QWebEngineProfile
 from urllib.parse import urlparse, parse_qs
 import webbrowser
+
+
+class ExternalLinkPage(QWebEnginePage):
+    """用于处理新窗口/新标签的页面，将链接交给系统浏览器"""
+
+    def __init__(self, parent_dialog, profile=None):
+        if profile is not None:
+            super().__init__(profile, parent_dialog)
+        else:
+            super().__init__(parent_dialog)
+        self.parent_dialog = parent_dialog
+
+    def acceptNavigationRequest(self, url, navigation_type, is_main_frame):
+        url_str = url.toString()
+        if url_str:
+            if self.parent_dialog:
+                self.parent_dialog.open_external_url(url_str)
+            else:
+                webbrowser.open(url_str)
+        return False
 
 
 class LoginPage(QWebEnginePage):
     """自定义WebEngine页面，用于拦截登录请求"""
     
-    def __init__(self, parent_dialog):
-        super().__init__()
+    def __init__(self, parent_dialog, profile=None):
+        if profile is not None:
+            super().__init__(profile, parent_dialog)
+        else:
+            super().__init__(parent_dialog)
         self.parent_dialog = parent_dialog
+
+    def createWindow(self, window_type):
+        """处理页面内新窗口/新标签打开请求"""
+        if self.parent_dialog:
+            return self.parent_dialog.register_external_link_page()
+        return ExternalLinkPage(None)
     
     def acceptNavigationRequest(self, url, navigation_type, is_main_frame):
         """拦截导航请求"""
@@ -76,6 +105,15 @@ class LoginPage(QWebEnginePage):
         # 允许其他导航（包括外部URL和已存在的文件URL）
         return super().acceptNavigationRequest(url, navigation_type, is_main_frame)
 
+    def javaScriptAlert(self, security_origin, msg):
+        """拦截网页alert弹窗，避免调试信息影响终端用户"""
+        print(f"[WebAlert]{security_origin.toString()}: {msg}")
+
+    def javaScriptConfirm(self, security_origin, msg):
+        """默认不弹confirm，返回False"""
+        print(f"[WebConfirm]{security_origin.toString()}: {msg}")
+        return False
+
 
 class LoginDialog(QDialog):
     """登录对话框类"""
@@ -89,13 +127,22 @@ class LoginDialog(QDialog):
         super().__init__()
         self.settings_manager = settings_manager
         self.webview = None
+        self.web_profile = None
+        self._external_link_pages = []
+        self.app_name = self.settings_manager.get('app.name', '桌面管理程序')
+        self.app_logo_text = self.settings_manager.get('app.logo_text', 'DM')
 
         self.setup_ui()
         self.load_saved_credentials()
+        self._maximized_once = False
 
     def setup_ui(self):
         """设置用户界面"""
-        self.setWindowTitle("登录 - 桌面管理程序")
+        self.setWindowTitle(f"登录 - {self.app_name}")
+
+        app_icon = self._resolve_app_icon()
+        if app_icon and not app_icon.isNull():
+            self.setWindowIcon(app_icon)
         
         # 设置窗口标志，确保有最小化、最大化、关闭按钮
         # 对于对话框，我们需要保持Dialog类型但添加按钮提示
@@ -103,12 +150,14 @@ class LoginDialog(QDialog):
         flags |= Qt.WindowType.WindowCloseButtonHint
         flags |= Qt.WindowType.WindowMinimizeButtonHint
         flags |= Qt.WindowType.WindowMaximizeButtonHint
+        flags |= Qt.WindowType.Window
         self.setWindowFlags(flags)
         
         # 设置窗口大小（可调整大小，默认1920x1080）
         self.resize(1920, 1080)
         self.setMinimumSize(800, 600)  # 设置最小尺寸
         self.setModal(True)
+        self.setWindowState(self.windowState() | Qt.WindowState.WindowMaximized)
 
         # 居中显示
         self.center_dialog()
@@ -120,14 +169,41 @@ class LoginDialog(QDialog):
 
         # 创建WebView来显示HTML登录页面
         self.webview = QWebEngineView()
+
+        # 使用持久化Profile，确保外部页面的cookie/localStorage可跨重启保留
+        profile_path = self._get_web_profile_path()
+        profile_path.mkdir(parents=True, exist_ok=True)
+        self.web_profile = QWebEngineProfile("desktop_manager_profile", self)
+        self.web_profile.setPersistentStoragePath(str(profile_path.resolve()))
+        self.web_profile.setCachePath(str((profile_path / "cache").resolve()))
+        self.web_profile.setPersistentCookiesPolicy(
+            QWebEngineProfile.PersistentCookiesPolicy.ForcePersistentCookies
+        )
         
         # 设置自定义页面来拦截URL
-        self.login_page = LoginPage(self)
+        self.login_page = LoginPage(self, self.web_profile)
         self.webview.setPage(self.login_page)
 
-        # 设置HTML页面路径
+        # 设置启动页面路径（可配置）
+        startup_page_url = self.settings_manager.get('startup_page_url', '').strip()
         html_path = Path(__file__).parent.parent / "01-登录.html"
-        if html_path.exists():
+
+        if startup_page_url:
+            if startup_page_url.startswith(("http://", "https://")):
+                self.webview.load(QUrl(startup_page_url))
+            else:
+                startup_path = Path(startup_page_url)
+                if not startup_path.is_absolute():
+                    startup_path = Path(__file__).parent.parent / startup_page_url
+                if startup_path.exists():
+                    self.webview.load(QUrl.fromLocalFile(str(startup_path.resolve())))
+                elif html_path.exists():
+                    self.webview.load(QUrl.fromLocalFile(str(html_path.resolve())))
+                else:
+                    # 如果HTML文件不存在，使用原生Qt界面
+                    self.create_native_login_ui(main_layout)
+                    return
+        elif html_path.exists():
             self.webview.load(QUrl.fromLocalFile(str(html_path.resolve())))
         else:
             # 如果HTML文件不存在，使用原生Qt界面
@@ -140,6 +216,58 @@ class LoginDialog(QDialog):
         main_layout.addWidget(self.webview)
         self.setLayout(main_layout)
 
+    def showEvent(self, event):
+        super().showEvent(event)
+        if not self._maximized_once:
+            self._maximized_once = True
+            QTimer.singleShot(0, self.showMaximized)
+
+    def _get_web_profile_path(self) -> Path:
+        """获取WebView持久化目录（优先用户可写路径）"""
+        app_data_dir = QStandardPaths.writableLocation(QStandardPaths.StandardLocation.AppDataLocation)
+        if app_data_dir:
+            return Path(app_data_dir) / "web_profile"
+
+        # 兜底到项目目录（开发环境）
+        return Path("config") / "web_profile"
+
+    def register_external_link_page(self):
+        """注册用于处理新窗口/新标签链接的页面，避免被垃圾回收"""
+        page = ExternalLinkPage(self, self.web_profile)
+        self._external_link_pages.append(page)
+        page.destroyed.connect(lambda: self._cleanup_external_link_page(page))
+        return page
+
+    def _cleanup_external_link_page(self, page):
+        if page in self._external_link_pages:
+            self._external_link_pages.remove(page)
+
+    def closeEvent(self, event):
+        """关闭窗口时清理WebEngine资源，避免后台进程残留"""
+        try:
+            if self.webview:
+                self.webview.setPage(QWebEnginePage(self.web_profile, self))
+                self.webview.deleteLater()
+                self.webview = None
+
+            for page in self._external_link_pages:
+                page.deleteLater()
+            self._external_link_pages.clear()
+
+            if self.login_page:
+                self.login_page.deleteLater()
+
+            if self.web_profile:
+                self.web_profile.deleteLater()
+        except Exception:
+            pass
+
+        super().closeEvent(event)
+
+        app = QApplication.instance()
+        if app:
+            app.quit()
+
     def create_native_login_ui(self, main_layout):
         """创建原生Qt登录界面（备用方案）
 
@@ -151,7 +279,7 @@ class LoginDialog(QDialog):
         logo_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         # Logo图标
-        logo_label = QLabel("DM")
+        logo_label = QLabel(self.app_logo_text)
         logo_label.setFixedSize(64, 64)
         logo_label.setStyleSheet("""
             QLabel {
@@ -167,7 +295,7 @@ class LoginDialog(QDialog):
         logo_layout.addWidget(logo_label)
 
         # 标题
-        title_label = QLabel("桌面管理程序")
+        title_label = QLabel(self.app_name)
         title_label.setFont(QFont("Arial", 20, QFont.Weight.Bold))
         title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         logo_layout.addWidget(title_label)
@@ -274,6 +402,30 @@ class LoginDialog(QDialog):
                 border-color: #2563EB;
             }
         """)
+
+    def _resolve_app_icon(self):
+        """解析与主程序一致的图标"""
+        app = QApplication.instance()
+        if app and not app.windowIcon().isNull():
+            return app.windowIcon()
+
+        icon_setting = self.settings_manager.get('app.icon_path', 'resources/icon.png')
+        icon_path = Path(icon_setting)
+        candidates = []
+
+        if icon_path.is_absolute():
+            candidates.append(icon_path)
+        else:
+            candidates.append(self.settings_manager.settings_file.parent / icon_path)
+            if getattr(sys, 'frozen', False):
+                candidates.append(Path(getattr(sys, '_MEIPASS', '')) / icon_path)
+            candidates.append((Path(__file__).parent.parent / icon_path).resolve())
+
+        for candidate in candidates:
+            if candidate.exists():
+                return QIcon(str(candidate))
+
+        return QIcon()
 
     def center_dialog(self):
         """将对话框居中显示"""
@@ -507,7 +659,7 @@ class LoginDialog(QDialog):
             if self.webview and self.webview.page():
                 self.webview.load(QUrl.fromLocalFile(str(html_path.resolve())))
                 # 更新窗口标题
-                self.setWindowTitle("桌面管理程序 - 主页面")
+                self.setWindowTitle(f"{self.app_name} - 主页面")
                 # 隐藏登录相关的原生UI（如果有）
                 if hasattr(self, 'login_button'):
                     self.login_button.setVisible(False)
@@ -540,13 +692,13 @@ class LoginDialog(QDialog):
                     # 更新窗口标题
                     file_name = html_path.stem
                     if "设置" in file_name:
-                        self.setWindowTitle("桌面管理程序 - 设置")
+                        self.setWindowTitle(f"{self.app_name} - 设置")
                     elif "登录" in file_name:
-                        self.setWindowTitle("桌面管理程序 - 登录")
+                        self.setWindowTitle(f"{self.app_name} - 登录")
                     elif "主页面" in file_name or "主页" in file_name:
-                        self.setWindowTitle("桌面管理程序 - 主页面")
+                        self.setWindowTitle(f"{self.app_name} - 主页面")
                     else:
-                        self.setWindowTitle(f"桌面管理程序 - {file_name}")
+                        self.setWindowTitle(f"{self.app_name} - {file_name}")
             else:
                 QMessageBox.warning(self, "错误", f"HTML文件不存在: {html_path}")
         except Exception as e:

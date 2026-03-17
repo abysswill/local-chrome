@@ -95,10 +95,15 @@ python main.py
 
 ## 配置说明
 
-应用程序配置文件位于 `config/settings.json`，包含以下主要设置：
+应用程序配置文件默认位于用户目录（Windows: `%APPDATA%/Desktop Manager/config/settings.json`），包含以下主要设置：
 
 ```json
 {
+  "app": {
+    "name": "桌面管理程序",
+    "logo_text": "DM",
+    "icon_path": "resources/icon.png"
+  },
   "urls": {
     "user_management": "https://example.com/patients",
     "assessment": "https://example.com/assessment",
@@ -109,6 +114,7 @@ python main.py
     "ai": "https://example.com/ai",
     "help": "https://example.com/help"
   },
+  "startup_page_url": "",
   "theme_mode": "light",
   "auto_login": false,
   "default_browser": "system"
@@ -143,6 +149,15 @@ python main.py
 pip install pyinstaller
 pyinstaller --windowed --onefile main.py
 ```
+
+或使用 `build_exe.bat`（默认 `onedir`，启动更快；配置统一从 `config/settings.json` 读取）：
+
+```bat
+build_exe.bat
+```
+`settings.json` 中 `app.icon_path` 建议使用 `.ico` 或 `.exe` 路径用于打包 EXE 图标；若填写 `.png` 将仅用于运行时窗口图标。
+如需单文件分发可使用：`build_exe.bat onefile`（启动会比默认模式慢）。
+默认 `onedir` 模式下，脚本会额外生成 `dist/<应用名>.zip`，可作为单文件交付给客户（解压后运行）。
 
 ## 系统要求
 
