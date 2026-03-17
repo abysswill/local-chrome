@@ -139,6 +139,10 @@ class LoginDialog(QDialog):
     def setup_ui(self):
         """设置用户界面"""
         self.setWindowTitle(f"登录 - {self.app_name}")
+
+        app = QApplication.instance()
+        if app and not app.windowIcon().isNull():
+            self.setWindowIcon(app.windowIcon())
         
         # 设置窗口标志，确保有最小化、最大化、关闭按钮
         # 对于对话框，我们需要保持Dialog类型但添加按钮提示
